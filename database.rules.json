@@ -1,0 +1,16 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "maintenance": {
+      ".read": true,
+      ".write": false
+    },
+    "liveMatches": {
+      "$matchId": {
+        ".read": true,
+        ".write": "auth != null"
+      }
+    }
+  }
+}

@@ -1,0 +1,17 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /clubs/{clubId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && ('league_admin' in request.auth.token.roles || 'team_admin' in request.auth.token.roles);
+    }
+    match /profiles/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    match /articles/{articleId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && 'league_admin' in request.auth.token.roles;
+    }
+  }
+}
