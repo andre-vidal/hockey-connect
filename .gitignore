@@ -5,6 +5,9 @@
 
 # testing
 /coverage
+/playwright-report
+/test-results
+.env.test
 
 # next.js
 /.next/
@@ -32,3 +35,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# firebase
+hockey-connect-decb8-firebase-adminsdk-fbsvc-ac77793b0f.json
+
+# resend
+resend.env
+
+# playwright
+playwright-report
+test-results
+
+# misc
+.DS_Store
+*.pem
