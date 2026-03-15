@@ -3,7 +3,9 @@
     "allow": [
       "WebSearch",
       "Bash(npm install:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(firebase database:set /maintenance/enabled --data \"true\" --force --project hockey-connect-decb8)",
+      "Bash(firebase database:set /maintenance/enabled --data \"false\" --force --project hockey-connect-decb8)"
     ]
   }
 }

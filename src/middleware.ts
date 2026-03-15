@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/", "/login", "/register", "/maintenance", "/leagues", "/clubs", "/players", "/calendar", "/articles", "/matches", "/stats"];
 const ADMIN_PATHS = ["/admin"];
 const OFFICIAL_PATHS = ["/official"];
 const TEAM_PATHS = ["/team"];
 const PLAYER_PATHS = ["/player"];
 const DASHBOARD_PATHS = [...ADMIN_PATHS, ...OFFICIAL_PATHS, ...TEAM_PATHS, ...PLAYER_PATHS];
 
-function isPublicPath(pathname: string): boolean {
-  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
-}
-
 function isDashboardPath(pathname: string): boolean {
-  return DASHBOARD_PATHS.some((p) => pathname.startsWith(p));
+  return DASHBOARD_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
 
 export async function middleware(request: NextRequest) {
@@ -26,13 +21,18 @@ export async function middleware(request: NextRequest) {
   // Check session cookie for auth state
   const sessionCookie = request.cookies.get("session")?.value;
 
-  // Maintenance mode check (read from a request header set by edge config, or skip if not configured)
-  const maintenanceMode = request.headers.get("x-maintenance-mode") === "true";
-  if (maintenanceMode && pathname !== "/maintenance") {
-    return NextResponse.redirect(new URL("/maintenance", request.url));
-  }
-  if (pathname === "/maintenance" && !maintenanceMode) {
-    return NextResponse.redirect(new URL("/", request.url));
+  // Maintenance mode check — only active when x-maintenance-mode header is explicitly set
+  // (e.g. by Vercel Edge Config). When the header is absent, MaintenanceProvider handles
+  // maintenance mode client-side via RTDB, so the middleware must not interfere.
+  const maintenanceModeHeader = request.headers.get("x-maintenance-mode");
+  if (maintenanceModeHeader !== null) {
+    const maintenanceMode = maintenanceModeHeader === "true";
+    if (maintenanceMode && pathname !== "/maintenance") {
+      return NextResponse.redirect(new URL("/maintenance", request.url));
+    }
+    if (pathname === "/maintenance" && !maintenanceMode) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
   }
 
   // Redirect unauthenticated users trying to access dashboard

@@ -9,7 +9,7 @@ function firebaseCli(args: string): void {
   const project = process.env.FIREBASE_PROJECT_ID;
   if (!project) throw new Error("FIREBASE_PROJECT_ID is not set in .env.test");
 
-  execSync(`firebase ${args} --project ${project} --non-interactive`, {
+  execSync(`firebase ${args} --project ${project}`, {
     stdio: "pipe",
     env: process.env,
   });
@@ -27,7 +27,9 @@ function firebaseCli(args: string): void {
  * `snapshot.val() === true` check in MaintenanceProvider.
  */
 export function setMaintenanceMode(enabled: boolean): void {
-  firebaseCli(`database:set /maintenance/enabled ${String(enabled)}`);
+  // --force skips the interactive confirmation prompt
+  // --data passes the JSON value inline (boolean, not a string)
+  firebaseCli(`database:set /maintenance/enabled --data "${String(enabled)}" --force`);
 }
 
 /**
