@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signInWithEmail, signInWithGoogle, signInAnonymous } from "@/lib/firebase/auth";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,31 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
+function dashboardForRoles(roles: string[]): string {
+  if (roles.includes("root")) return "/root";
+  if (roles.includes("league_admin")) return "/admin";
+  if (roles.includes("match_official")) return "/official";
+  if (roles.includes("team_admin")) return "/team";
+  if (roles.includes("player")) return "/player";
+  return "/";
+}
+
+async function mintSessionCookie(getIdToken: () => Promise<string>): Promise<string[]> {
+  const idToken = await getIdToken();
+  const res = await fetch("/api/auth/session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ idToken }),
+  });
+  const data = await res.json();
+  return data.roles ?? [];
+}
+
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") || "/";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,8 +44,9 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
     try {
-      await signInWithEmail(email, password);
-      router.push("/");
+      const credential = await signInWithEmail(email, password);
+      const roles = await mintSessionCookie(() => credential.user.getIdToken());
+      router.push(redirectTo === "/" ? dashboardForRoles(roles) : redirectTo);
     } catch {
       setError("Invalid email or password. Please try again.");
     } finally {
@@ -34,8 +58,9 @@ export function LoginForm() {
     setLoading(true);
     setError(null);
     try {
-      await signInWithGoogle();
-      router.push("/");
+      const credential = await signInWithGoogle();
+      const roles = await mintSessionCookie(() => credential.user.getIdToken());
+      router.push(redirectTo === "/" ? dashboardForRoles(roles) : redirectTo);
     } catch {
       setError("Failed to sign in with Google. Please try again.");
     } finally {

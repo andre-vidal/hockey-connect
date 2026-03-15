@@ -49,6 +49,12 @@ export function RegisterForm() {
         isAnonymous: false,
       };
       await setDoc(doc(db, "users", credential.user.uid), profile);
+      const idToken = await credential.user.getIdToken();
+      await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
       router.push("/");
     } catch (err: unknown) {
       if (err instanceof Error && err.message.includes("email-already-in-use")) {
@@ -80,6 +86,12 @@ export function RegisterForm() {
         isAnonymous: false,
       };
       await setDoc(doc(db, "users", credential.user.uid), profile, { merge: true });
+      const idToken = await credential.user.getIdToken();
+      await fetch("/api/auth/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken }),
+      });
       router.push("/");
     } catch {
       setError("Failed to sign up with Google. Please try again.");

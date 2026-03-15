@@ -22,6 +22,7 @@ export function Header() {
 
   const getDashboardPath = () => {
     switch (primaryRole) {
+      case "root": return "/root";
       case "league_admin": return "/admin";
       case "match_official": return "/official";
       case "team_admin": return "/team";
@@ -77,7 +78,14 @@ export function Header() {
                     <Link href={getDashboardPath()}>Dashboard</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => logOut()} className="text-red-600">
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      await logOut();
+                      await fetch("/api/auth/session", { method: "DELETE" });
+                      window.location.href = "/login";
+                    }}
+                    className="text-red-600"
+                  >
                     Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>

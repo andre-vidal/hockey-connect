@@ -23,15 +23,20 @@ interface NavItem {
   icon: React.ElementType;
 }
 
+const rootOnlyNav: NavItem[] = [
+  { label: "Root Dashboard", href: "/root", icon: LayoutDashboard },
+  { label: "Settings", href: "/root/settings", icon: Settings },
+];
+
 const adminNav: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Leagues", href: "/admin/leagues", icon: Trophy },
+  { label: "Tournaments", href: "/admin/tournaments", icon: Swords },
   { label: "Clubs", href: "/admin/clubs", icon: Shield },
   { label: "Officials", href: "/admin/officials", icon: UserCog },
   { label: "Users", href: "/admin/users", icon: Users },
-  { label: "Matches", href: "/admin/matches", icon: Swords },
+  { label: "Matches", href: "/admin/matches", icon: Calendar },
   { label: "Articles", href: "/admin/articles", icon: FileText },
-  { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 const officialNav: NavItem[] = [
@@ -58,27 +63,57 @@ const playerNav: NavItem[] = [
   { label: "Articles", href: "/player/articles", icon: FileText },
 ];
 
+function NavList({ items, pathname }: { items: NavItem[]; pathname: string }) {
+  return (
+    <>
+      {items.map((item) => {
+        const Icon = item.icon;
+        const isActive =
+          pathname === item.href ||
+          (item.href !== "/admin" && item.href !== "/official" && item.href !== "/team" && item.href !== "/player" && item.href !== "/root" && pathname.startsWith(item.href));
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+              isActive ? "bg-primary-50 text-primary-700" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+            )}
+          >
+            <Icon className="h-4 w-4 shrink-0" />
+            {item.label}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
 export function Sidebar() {
   const { primaryRole } = useRole();
   const pathname = usePathname();
 
-  const navItems =
-    primaryRole === "league_admin"
-      ? adminNav
-      : primaryRole === "match_official"
-      ? officialNav
-      : primaryRole === "team_admin"
-      ? teamNav
-      : playerNav;
+  const isRoot = primaryRole === "root";
 
-  const roleLabel =
-    primaryRole === "league_admin"
-      ? "League Admin"
-      : primaryRole === "match_official"
-      ? "Match Official"
-      : primaryRole === "team_admin"
-      ? "Team Admin"
-      : "Player";
+  const mainNav = isRoot
+    ? adminNav
+    : primaryRole === "league_admin"
+    ? adminNav
+    : primaryRole === "match_official"
+    ? officialNav
+    : primaryRole === "team_admin"
+    ? teamNav
+    : playerNav;
+
+  const roleLabel = isRoot
+    ? "Root"
+    : primaryRole === "league_admin"
+    ? "League Admin"
+    : primaryRole === "match_official"
+    ? "Match Official"
+    : primaryRole === "team_admin"
+    ? "Team Admin"
+    : "Player";
 
   return (
     <aside className="hidden lg:flex flex-col w-64 border-r border-gray-200 bg-white min-h-screen">
@@ -86,25 +121,15 @@ export function Sidebar() {
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{roleLabel}</p>
       </div>
       <nav className="flex-1 p-4 space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href || (item.href !== "/admin" && item.href !== "/official" && item.href !== "/team" && item.href !== "/player" && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-primary-50 text-primary-700"
-                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              {item.label}
-            </Link>
-          );
-        })}
+        <NavList items={mainNav} pathname={pathname} />
+        {isRoot && (
+          <>
+            <div className="pt-4 pb-1">
+              <p className="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Root</p>
+            </div>
+            <NavList items={rootOnlyNav} pathname={pathname} />
+          </>
+        )}
       </nav>
     </aside>
   );

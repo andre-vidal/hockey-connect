@@ -4,12 +4,15 @@ import { UserRole } from "@/types";
 export function useRole() {
   const { roles, hasRole, hasAnyRole, loading } = useAuth();
 
+  const isRoot = hasRole("root");
   const isLeagueAdmin = hasRole("league_admin");
   const isMatchOfficial = hasRole("match_official");
   const isTeamAdmin = hasRole("team_admin");
   const isPlayer = hasRole("player");
 
-  const primaryRole: UserRole = isLeagueAdmin
+  const primaryRole: UserRole = isRoot
+    ? "root"
+    : isLeagueAdmin
     ? "league_admin"
     : isMatchOfficial
     ? "match_official"
@@ -22,6 +25,7 @@ export function useRole() {
   return {
     roles,
     primaryRole,
+    isRoot,
     isLeagueAdmin,
     isMatchOfficial,
     isTeamAdmin,

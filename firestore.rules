@@ -44,6 +44,34 @@ service cloud.firestore {
       allow write: if isLeagueAdmin();
     }
 
+    // Leagues - public read, league_admin write
+    match /leagues/{leagueId} {
+      allow read: if true;
+      allow write: if isLeagueAdmin();
+      match /archivedSeasons/{seasonId} {
+        allow read: if true;
+        allow write: if isLeagueAdmin();
+      }
+    }
+
+    // Tournaments - public read, league_admin write
+    match /tournaments/{tournamentId} {
+      allow read: if true;
+      allow write: if isLeagueAdmin();
+    }
+
+    // Clubs - public read, league_admin write
+    match /clubs/{clubId} {
+      allow read: if true;
+      allow write: if isLeagueAdmin();
+    }
+
+    // Match officials - authenticated read, league_admin write
+    match /officials/{officialId} {
+      allow read: if isAuthenticated();
+      allow write: if isLeagueAdmin();
+    }
+
     // All other collections - league admin has full access
     // Fine-grained rules added per-phase
     match /{document=**} {

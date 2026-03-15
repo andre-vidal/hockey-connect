@@ -7,5 +7,18 @@
       "Bash(firebase database:set /maintenance/enabled --data \"true\" --force --project hockey-connect-decb8)",
       "Bash(firebase database:set /maintenance/enabled --data \"false\" --force --project hockey-connect-decb8)"
     ]
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "afplay /System/Library/Sounds/Glass.aiff" 
+          }
+        ]
+      }
+    ]
   }
 }

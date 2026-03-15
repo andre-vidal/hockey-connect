@@ -24,7 +24,8 @@ export function AuthGuard({ children, requiredRoles, redirectTo = "/login" }: Au
     }
 
     if (requiredRoles && requiredRoles.length > 0) {
-      const hasAccess = requiredRoles.some((role) => roles.includes(role));
+      const isRoot = roles.includes("root");
+      const hasAccess = isRoot || requiredRoles.some((role) => roles.includes(role));
       if (!hasAccess) {
         router.replace("/");
       }
@@ -42,7 +43,8 @@ export function AuthGuard({ children, requiredRoles, redirectTo = "/login" }: Au
   if (!user || user.isAnonymous) return null;
 
   if (requiredRoles && requiredRoles.length > 0) {
-    const hasAccess = requiredRoles.some((role) => roles.includes(role));
+    const isRoot = roles.includes("root");
+    const hasAccess = isRoot || requiredRoles.some((role) => roles.includes(role));
     if (!hasAccess) return null;
   }
 
