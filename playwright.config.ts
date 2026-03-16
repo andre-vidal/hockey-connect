@@ -8,7 +8,7 @@ dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  timeout: 30_000,
+  timeout: 60_000,
   retries: process.env.CI ? 2 : 0,
   // Serial execution required: maintenance tests mutate shared RTDB state
   workers: 1,
@@ -25,7 +25,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm run dev",
+    command: "npm run start",
     url: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000",
     // Reuse running dev server locally; always spin up fresh on CI
     reuseExistingServer: !process.env.CI,

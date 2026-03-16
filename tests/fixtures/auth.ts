@@ -50,10 +50,13 @@ async function createSession(page: Page, email: string, password: string): Promi
  * Usage in a test file:
  *   import { test, expect } from "../../fixtures/auth";
  *   test("...", async ({ authenticatedPage }) => { ... });
+ *   test("...", async ({ leagueAdminPage }) => { ... });
  */
 export const test = base.extend<{
-  /** A page with a valid session cookie for TEST_USER_EMAIL */
+  /** A page with a valid session cookie for TEST_USER_EMAIL (no roles) */
   authenticatedPage: Page;
+  /** A page with a valid session cookie for LEAGUE_ADMIN_EMAIL (league_admin role) */
+  leagueAdminPage: Page;
 }>({
   authenticatedPage: async ({ page }, use) => {
     const email = process.env.TEST_USER_EMAIL;
@@ -62,6 +65,24 @@ export const test = base.extend<{
       throw new Error("TEST_USER_EMAIL and TEST_USER_PASSWORD must be set in .env.test");
     }
     await createSession(page, email, password);
+    await use(page);
+  },
+  leagueAdminPage: async ({ page }, use) => {
+    const email = process.env.LEAGUE_ADMIN_EMAIL;
+    const password = process.env.LEAGUE_ADMIN_PASSWORD;
+    if (!email || !password) {
+      throw new Error("LEAGUE_ADMIN_EMAIL and LEAGUE_ADMIN_PASSWORD must be set in .env.test");
+    }
+    // Sign in through the UI so both Firebase client auth state (onAuthStateChanged)
+    // AND the httpOnly session cookie are established. The REST-API-only approach
+    // (createSession) is sufficient for middleware/API tests but not for dashboard
+    // pages that use AuthGuard, which reads roles from AuthProvider client-side.
+    await page.goto("/login");
+    await page.waitForURL("/login", { timeout: 15_000 });
+    await page.locator("#email").fill(email);
+    await page.locator("#password").fill(password);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL("/admin", { timeout: 15_000 });
     await use(page);
   },
 });

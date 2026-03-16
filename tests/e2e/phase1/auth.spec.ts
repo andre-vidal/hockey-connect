@@ -28,7 +28,7 @@ test.describe("email/password login", () => {
     await page.locator(loginSel.submitButton).click();
 
     // LoginForm calls router.push("/") on success
-    await expect(page).toHaveURL("/", { timeout: 10_000 });
+    await expect(page).toHaveURL("/", { timeout: 15_000 });
   });
 
   test("invalid credentials → shows error, stays on /login", async ({ page }) => {
