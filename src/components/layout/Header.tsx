@@ -19,6 +19,7 @@ import { Shield } from "lucide-react";
 export function Header() {
   const { user, profile } = useAuth();
   const { primaryRole } = useRole();
+  console.log(primaryRole);
 
   const getDashboardPath = () => {
     switch (primaryRole) {

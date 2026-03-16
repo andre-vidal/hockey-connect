@@ -11,7 +11,7 @@ async function verifyLeagueAdmin() {
   const decoded = await adminAuth.verifySessionCookie(session, true);
   const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
   const roles = userDoc.data()?.roles ?? [];
-  if (!roles.includes("league_admin")) throw new Error("Forbidden");
+  if (!roles.includes("league_admin") && !roles.includes("root")) throw new Error("Forbidden");
   return decoded;
 }
 
@@ -47,7 +47,7 @@ export async function POST(
         .collection("leagues")
         .doc(leagueId)
         .collection("archivedSeasons")
-        .doc(previousSeason.currentSeason)
+        .doc(previousSeason.currentSeason.replace(/\//g, "-"))
         .set({
           ...previousSeason,
           archivedAt: new Date().toISOString(),

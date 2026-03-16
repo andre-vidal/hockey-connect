@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signInWithEmail, signInWithGoogle, signInAnonymous } from "@/lib/firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
+import { UserProfile } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,6 +62,24 @@ export function LoginForm() {
     setError(null);
     try {
       const credential = await signInWithGoogle();
+      const userRef = doc(db, "users", credential.user.uid);
+      const existing = await getDoc(userRef);
+      if (!existing.exists()) {
+        const now = new Date().toISOString();
+        const profile: UserProfile = {
+          uid: credential.user.uid,
+          email: credential.user.email,
+          displayName: credential.user.displayName,
+          photoURL: credential.user.photoURL,
+          roles: [],
+          clubId: null,
+          createdAt: now,
+          updatedAt: now,
+          isActive: true,
+          isAnonymous: false,
+        };
+        await setDoc(userRef, profile);
+      }
       const roles = await mintSessionCookie(() => credential.user.getIdToken());
       router.push(redirectTo === "/" ? dashboardForRoles(roles) : redirectTo);
     } catch {

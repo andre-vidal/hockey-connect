@@ -4,19 +4,24 @@ import { adminAuth, adminDb } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
-async function verifyLeagueAdmin() {
+async function verifyAuthenticated() {
   const cookieStore = await cookies();
   const session = cookieStore.get("session")?.value;
   if (!session) throw new Error("Unauthorized");
-  const decoded = await adminAuth.verifySessionCookie(session, true);
+  return adminAuth.verifySessionCookie(session, true);
+}
+
+async function verifyLeagueAdmin() {
+  const decoded = await verifyAuthenticated();
   const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
   const roles = userDoc.data()?.roles ?? [];
-  if (!roles.includes("league_admin")) throw new Error("Forbidden");
+  if (!roles.includes("league_admin") && !roles.includes("root")) throw new Error("Forbidden");
   return decoded;
 }
 
 export async function GET() {
   try {
+    await verifyAuthenticated();
     const snapshot = await adminDb
       .collection("leagues")
       .orderBy("createdAt", "desc")
@@ -24,8 +29,9 @@ export async function GET() {
     const leagues = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
     return NextResponse.json({ leagues });
   } catch (error) {
-    console.error("GET /api/leagues error:", error);
-    return NextResponse.json({ error: "Failed to fetch leagues" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to fetch leagues";
+    const status = message === "Unauthorized" ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
 

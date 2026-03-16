@@ -125,7 +125,7 @@ export default function EditLeaguePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to create season");
-      toast({ title: "Season created", description: `Season ${newSeason.currentSeason} is now active.` });
+      toast({ title: "Season created", description: `Season ${newSeason.currentSeason} is now active.`, variant: "success" });
       setForm((prev) => prev ? { ...prev, season: newSeason } : prev);
       setShowSeasonModal(false);
       setNewSeason({ currentSeason: "", startDate: "", endDate: "" });
