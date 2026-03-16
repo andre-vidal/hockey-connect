@@ -44,7 +44,7 @@ cp .env.test.example .env.test
 | `FIREBASE_PROJECT_ID` | Firebase project ID (same as in `.env.local`) |
 | `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase web API key (same as in `.env.local`) |
 
-To create the `LEAGUE_ADMIN` test account: create a user in Firebase Auth, then set `roles: ["league_admin"]` on their `users/{uid}` Firestore document. Sign in once so the session cookie syncs the custom claim.
+To create the `LEAGUE_ADMIN` test account: register an account on the webapp, then set `roles: ["league_admin"]` on their `users/{uid}` Firestore document. Sign in once so the session cookie syncs the custom claim.
 
 **2. Install Playwright browsers (first time only):**
 
@@ -64,6 +64,9 @@ firebase login
 ```bash
 # Run all e2e tests (starts dev server automatically)
 npx playwright test
+
+# Run the playwright GUI
+npx playwright test --ui
 
 # Run a specific spec file
 npx playwright test tests/e2e/phase1/auth.spec.ts
@@ -100,6 +103,41 @@ Phase 2 tests use two additional conventions:
 **Security tests** — Each spec file has a `security` describe block that sends raw API requests from unauthenticated (`page`) and plain-user (`authenticatedPage`) sessions, asserting `401` and `403` responses respectively.
 
 **Logo upload tests** — `clubs.spec.ts` uses `tests/fixtures/assets/test-logo.png` (a 64×64 green PNG) with Playwright's `setInputFiles()` to simulate a file upload without requiring a real image.
+
+**API response shape** — All POST endpoints return a nested object keyed by resource type, not a flat response. Always destructure one level deep:
+
+```typescript
+// Correct
+const { league: { id } } = await res.json();
+const { tournament: { id } } = await res.json();
+const { official: { id } } = await res.json();
+const { club: { id } } = await res.json();
+
+// Wrong — id will be undefined
+const { id } = await res.json();
+```
+
+**Pre-clean for shared accounts** — Tests that create records tied to a shared account (e.g. `LEAGUE_ADMIN_EMAIL`) must delete any stale records for that account before the test body runs. A previous failed run may have left data behind, causing duplicate matches or unexpected state:
+
+```typescript
+const preRes = await page.request.get("/api/officials");
+const { officials: existing } = await preRes.json();
+const stale = (existing as { email: string; id: string }[]).filter((o) => o.email === adminEmail);
+await Promise.all(stale.map((o) => page.request.delete(`/api/officials/${o.id}`)));
+```
+
+Cleanup at the end of the test should likewise use `filter` + `Promise.all` rather than `find`, so all matches are deleted, not just the first.
+
+**Scoping selectors to containers** — When the same text appears in more than one place on the page (e.g. a dialog title and the button that opened it), scope the assertion to its container to avoid ambiguous matches:
+
+```typescript
+// Wrong — matches both the trigger button and the dialog title
+await expect(page.getByText("Invite Club Admin")).toBeVisible();
+
+// Correct — scoped to the dialog
+const dialog = page.getByRole("dialog");
+await expect(dialog.getByText("Invite Club Admin", { exact: true })).toBeVisible();
+```
 
 ## Adding Tests for New Phases
 
