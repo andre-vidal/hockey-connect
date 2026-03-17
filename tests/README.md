@@ -4,26 +4,43 @@ End-to-end tests using [Playwright](https://playwright.dev/). All tests run agai
 
 ## Structure
 
+Tests are organised by **user role** — each directory covers the functionality accessible to that actor.
+
 ```
 tests/
 ├── e2e/
-│   ├── phase1/
-│   │   ├── auth.spec.ts        — Login (email/password, Google, anonymous) + registration form validation
-│   │   ├── maintenance.spec.ts — RTDB maintenance flag → redirect behaviour
-│   │   └── middleware.spec.ts  — Route protection & auth redirect rules
-│   └── phase2/
-│       ├── leagues.spec.ts     — League CRUD + season management + security
-│       ├── clubs.spec.ts       — Club CRUD + logo upload + archive + security
-│       ├── tournaments.spec.ts — Tournament CRUD + league linking + security
-│       ├── officials.spec.ts   — Official registration (user search) + CRUD + security
-│       └── users.spec.ts       — User list, invite modal, activate/deactivate + security
+│   ├── public/                    — unauthenticated visitor (no session cookie)
+│   │   ├── auth.spec.ts           — Login form, registration form, Google + anonymous sign-in
+│   │   ├── maintenance.spec.ts    — RTDB maintenance flag → redirect behaviour
+│   │   ├── routing.spec.ts        — Protected routes redirect to /login; public routes are accessible
+│   │   └── security.spec.ts       — All admin API endpoints return 401 for unauthenticated requests
+│   │
+│   ├── authenticated/             — signed-in user with no roles assigned
+│   │   ├── routing.spec.ts        — Authenticated visitor is redirected away from /login and /register
+│   │   └── security.spec.ts       — All admin API endpoints return 403 for role-less users
+│   │
+│   ├── league_admin/              — user with the `league_admin` role
+│   │   ├── leagues.spec.ts        — League CRUD + season management
+│   │   ├── clubs.spec.ts          — Club CRUD + logo upload + archive
+│   │   ├── tournaments.spec.ts    — Tournament CRUD + league linking
+│   │   ├── officials.spec.ts      — Official registration (user search) + CRUD
+│   │   └── users.spec.ts          — User list, invite modal, activate/deactivate
+│   │
+│   └── club_admin/                — user with the `club_admin` role (scoped to one club)
+│       ├── teams.spec.ts          — Team CRUD within own club
+│       ├── players.spec.ts        — Player CRUD + invite within own club
+│       ├── squads.spec.ts         — Squad creation and player management
+│       ├── users.spec.ts          — Club user listing and role editing
+│       └── security.spec.ts       — 403 for league-admin endpoints; cross-club isolation
+│
 ├── fixtures/
-│   ├── auth.ts                 — Playwright fixtures: authenticatedPage (no roles), leagueAdminPage
+│   ├── auth.ts                    — Playwright fixtures: authenticatedPage, leagueAdminPage,
+│   │                                matchOfficialPage, teamAdminPage
 │   └── assets/
-│       └── test-logo.png       — Minimal 64×64 PNG used by club logo upload tests
+│       └── test-logo.png          — Minimal 64×64 PNG used by club logo upload tests
 └── helpers/
-    ├── selectors.ts            — Centralised CSS selectors for all spec files
-    └── firebase-cli.ts         — Firebase CLI wrapper: set/reset /maintenance/enabled in RTDB
+    ├── selectors.ts               — Centralised CSS selectors for all spec files
+    └── firebase-cli.ts            — Firebase CLI wrapper: set/reset /maintenance/enabled in RTDB
 ```
 
 ## Setup
@@ -34,17 +51,28 @@ tests/
 cp .env.test.example .env.test
 ```
 
-| Variable | Description |
-|---|---|
-| `PLAYWRIGHT_BASE_URL` | URL of the running app (default: `http://localhost:3000`) |
-| `TEST_USER_EMAIL` | Email of a pre-existing Firebase Auth account (no roles) |
-| `TEST_USER_PASSWORD` | Password for the test account |
-| `LEAGUE_ADMIN_EMAIL` | Email of a Firebase Auth account with the `league_admin` role |
-| `LEAGUE_ADMIN_PASSWORD` | Password for the league admin test account |
-| `FIREBASE_PROJECT_ID` | Firebase project ID (same as in `.env.local`) |
-| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase web API key (same as in `.env.local`) |
+| Variable                       | Description                                                |
+| ------------------------------ | ---------------------------------------------------------- |
+| `PLAYWRIGHT_BASE_URL`          | URL of the running app (default: `http://localhost:3000`)  |
+| `TEST_USER_EMAIL`              | Email of a pre-existing Firebase Auth account (no roles)   |
+| `TEST_USER_PASSWORD`           | Password for the no-role test account                      |
+| `LEAGUE_ADMIN_EMAIL`           | Email of an account with the `league_admin` role           |
+| `LEAGUE_ADMIN_PASSWORD`        | Password for the league admin account                      |
+| `CLUB_ADMIN_EMAIL`             | Email of an account with the `club_admin` role             |
+| `CLUB_ADMIN_PASSWORD`          | Password for the club admin account                        |
+| `CLUB_ADMIN_CLUB_ID`           | Firestore ID of the club this admin manages                |
+| `CLUB_ADMIN_OPEN_LEAGUE_ID`    | Firestore ID of a pre-seeded league (used for squad tests) |
+| `CLUB_ADMIN_CLOSED_LEAGUE_ID`  | Firestore ID of a pre-seeded league (used for squad tests) |
+| `MATCH_OFFICIAL_EMAIL`         | Email of an account with the `match_official` role         |
+| `MATCH_OFFICIAL_PASSWORD`      | Password for the match official account                    |
+| `TEAM_ADMIN_EMAIL`             | Email of an account with the `team_admin` role             |
+| `TEAM_ADMIN_PASSWORD`          | Password for the team admin account                        |
+| `ROOT_EMAIL`                   | Email of a developer/root account                          |
+| `ROOT_PASSWORD`                | Password for the root account                              |
+| `FIREBASE_PROJECT_ID`          | Firebase project ID (same as in `.env.local`)              |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase web API key (same as in `.env.local`)             |
 
-To create the `LEAGUE_ADMIN` test account: register an account on the webapp, then set `roles: ["league_admin"]` on their `users/{uid}` Firestore document. Sign in once so the session cookie syncs the custom claim.
+To create a role-specific test account: register an account on the webapp, then set `roles: ["<role>"]` on their `users/{uid}` Firestore document. Sign in once so the session cookie syncs the custom claim.
 
 **2. Install Playwright browsers (first time only):**
 
@@ -68,8 +96,11 @@ npx playwright test
 # Run the playwright GUI
 npx playwright test --ui
 
+# Run a specific role directory
+npx playwright test tests/e2e/league_admin/
+
 # Run a specific spec file
-npx playwright test tests/e2e/phase1/auth.spec.ts
+npx playwright test tests/e2e/public/auth.spec.ts
 
 # Open the HTML report after a run
 npx playwright show-report
@@ -80,55 +111,85 @@ Tests run serially (`workers: 1`) because maintenance tests mutate shared RTDB s
 ## Key Design Decisions
 
 ### Auth fixture (`fixtures/auth.ts`)
-Establishes a server-recognised session without going through the login UI:
-1. Calls the Firebase Auth REST API to exchange credentials for an ID token.
-2. POSTs the token to `/api/auth/session` so the app sets the `session` httpOnly cookie.
 
-This is necessary for middleware tests, which check the cookie — not client-side Firebase auth state.
+Two strategies are used depending on the test's needs:
+
+**REST-only session** (`authenticatedPage`) — calls the Firebase Auth REST API to get an ID token, then POSTs it to `/api/auth/session`. Fast and sufficient for middleware/API tests that only check the session cookie.
+
+**UI login session** (`leagueAdminPage`, `matchOfficialPage`, `teamAdminPage`) — navigates through the login form so both the httpOnly session cookie and the Firebase client auth state (`onAuthStateChanged`) are established. Required for dashboard pages that use `AuthGuard`, which reads roles from `AuthProvider` client-side.
 
 ### Maintenance tests
+
 `setMaintenanceMode(true/false)` in `helpers/firebase-cli.ts` writes directly to `/maintenance/enabled` in RTDB via the Firebase CLI. The `MaintenanceProvider` subscribes to this path via `onValue()` and performs a client-side redirect. Tests use `page.waitForURL()` to account for this async redirect.
 
 An `afterEach` hook always resets maintenance mode to `false` to prevent state leaking between tests.
 
 ### Selectors (`helpers/selectors.ts`)
+
 All component selectors are centralised here. When markup changes, update this file once rather than hunting across spec files.
 
-## Phase 2 Test Patterns
+### Security tests
 
-Phase 2 tests use two additional conventions:
+Security coverage is split by actor:
 
-**API-based setup/teardown** — Rather than using the UI to create test data before every test, most edit/delete tests call the API directly via `page.request` within the test body and clean up in a `finally` block. This is faster and keeps tests independent.
+- `public/security.spec.ts` — unauthenticated requests → 401
+- `authenticated/security.spec.ts` — role-less authenticated requests → 403
+- `club_admin/security.spec.ts` — club admin cannot access league-admin-only endpoints (403) and cannot read/write another club's data (403)
 
-**Security tests** — Each spec file has a `security` describe block that sends raw API requests from unauthenticated (`page`) and plain-user (`authenticatedPage`) sessions, asserting `401` and `403` responses respectively.
+CRUD spec files focus on happy-path and validation flows only.
 
-**Logo upload tests** — `clubs.spec.ts` uses `tests/fixtures/assets/test-logo.png` (a 64×64 green PNG) with Playwright's `setInputFiles()` to simulate a file upload without requiring a real image.
+## Test Patterns
 
-**API response shape** — All POST endpoints return a nested object keyed by resource type, not a flat response. Always destructure one level deep:
+**API-based setup/teardown** — Rather than using the UI to create test data before every test, edit/delete tests create resources via the API within the test body and clean up in a `finally` block. This is faster and keeps tests independent.
+
+**Logo upload tests** — `league_admin/clubs.spec.ts` uses `tests/fixtures/assets/test-logo.png` (a 64×64 green PNG) with Playwright's `setInputFiles()` to simulate a file upload without requiring a real image.
+
+**API response shape** — All POST endpoints return a nested object keyed by resource type. Always destructure one level deep:
 
 ```typescript
 // Correct
-const { league: { id } } = await res.json();
-const { tournament: { id } } = await res.json();
-const { official: { id } } = await res.json();
-const { club: { id } } = await res.json();
+const {
+  league: { id },
+} = await res.json();
+const {
+  tournament: { id },
+} = await res.json();
+const {
+  official: { id },
+} = await res.json();
+const {
+  club: { id },
+} = await res.json();
 
 // Wrong — id will be undefined
 const { id } = await res.json();
 ```
 
-**Pre-clean for shared accounts** — Tests that create records tied to a shared account (e.g. `LEAGUE_ADMIN_EMAIL`) must delete any stale records for that account before the test body runs. A previous failed run may have left data behind, causing duplicate matches or unexpected state:
+**Pre-clean for shared accounts** — Tests that create records tied to a shared account (e.g. `LEAGUE_ADMIN_EMAIL`) must delete any stale records for that account before the test body runs:
 
 ```typescript
 const preRes = await page.request.get("/api/officials");
 const { officials: existing } = await preRes.json();
-const stale = (existing as { email: string; id: string }[]).filter((o) => o.email === adminEmail);
-await Promise.all(stale.map((o) => page.request.delete(`/api/officials/${o.id}`)));
+const stale = (existing as { email: string; id: string }[]).filter(
+  (o) => o.email === adminEmail,
+);
+await Promise.all(
+  stale.map((o) => page.request.delete(`/api/officials/${o.id}`)),
+);
 ```
 
-Cleanup at the end of the test should likewise use `filter` + `Promise.all` rather than `find`, so all matches are deleted, not just the first.
+**Form validation — disabled submit buttons** — Many forms programmatically disable the submit button when required fields are missing. Before writing a validation test that clicks the submit button and checks the URL, inspect the component to see if the button uses a `disabled` prop tied to the form state. If it does, assert `toBeDisabled()` instead of clicking:
 
-**Scoping selectors to containers** — When the same text appears in more than one place on the page (e.g. a dialog title and the button that opened it), scope the assertion to its container to avoid ambiguous matches:
+```typescript
+// Wrong — clicking a disabled button does nothing; the URL check passes vacuously
+await page.locator(sel.submitButton).click();
+await expect(page).toHaveURL(/\/club\/teams\/new/);
+
+// Correct — assert the button itself is disabled
+await expect(page.locator(sel.submitButton)).toBeDisabled();
+```
+
+**Scoping selectors to containers** — When the same text appears in more than one place, scope assertions to the container:
 
 ```typescript
 // Wrong — matches both the trigger button and the dialog title
@@ -136,11 +197,14 @@ await expect(page.getByText("Invite Club Admin")).toBeVisible();
 
 // Correct — scoped to the dialog
 const dialog = page.getByRole("dialog");
-await expect(dialog.getByText("Invite Club Admin", { exact: true })).toBeVisible();
+await expect(
+  dialog.getByText("Invite Club Admin", { exact: true }),
+).toBeVisible();
 ```
 
-## Adding Tests for New Phases
+## Adding Tests for New Roles
 
-1. Create a new directory under `tests/e2e/` matching the phase (e.g. `phase3/`).
+1. Create a new directory under `tests/e2e/` matching the role (e.g. `match_official/`).
 2. Add spec files there. Import shared selectors from `helpers/selectors.ts` and extend it with new selectors as needed.
-3. If a new spec needs a role-specific session, add a fixture to `fixtures/auth.ts` following the `leagueAdminPage` pattern and add the corresponding env vars to `.env.test.example`.
+3. Add a fixture for the role in `fixtures/auth.ts` following the `leagueAdminPage` pattern.
+4. Add the corresponding env vars to `.env.test.example`.

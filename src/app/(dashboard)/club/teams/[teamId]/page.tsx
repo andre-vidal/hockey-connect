@@ -68,7 +68,7 @@ export default function EditClubTeamPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       toast({ title: "Team updated" });
-      setTeam(data.team);
+      router.push("/club/teams");
     } catch (err) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to update", variant: "destructive" });
     } finally {

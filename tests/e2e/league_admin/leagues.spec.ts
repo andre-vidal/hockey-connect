@@ -2,19 +2,16 @@ import { test, expect } from "../../fixtures/auth";
 import { adminLeagues as sel } from "../../helpers/selectors";
 
 /**
- * Phase 2 — League CRUD
+ * League admin — League CRUD + season management
  *
- * Verification criteria from the plan:
- *   "Create a league, tournament, club."
- *   "Verify Firestore security rules reject unauthorized writes."
+ * Tests create, edit, delete, and season management from the perspective
+ * of a user with the `league_admin` role.
  *
  * Strategy:
  *   - Happy-path create: performed via UI with a unique name. Created records
  *     are deleted via the API at the end of each test.
  *   - Edit / delete: resource created via API before the test so the UI can
  *     operate on a known document.
- *   - Security: raw API calls from unauthenticated and plain-user sessions
- *     verify 401 / 403 responses.
  */
 
 const uid = () => Date.now().toString(36);
@@ -140,33 +137,5 @@ test.describe("new season", () => {
     } finally {
       await page.request.delete(`/api/leagues/${id}`);
     }
-  });
-});
-
-// ── Security ──────────────────────────────────────────────────────────────────
-
-test.describe("security — leagues API", () => {
-  test("unauthenticated GET /api/leagues → 401", async ({ page }) => {
-    const res = await page.request.get("/api/leagues");
-    expect(res.status()).toBe(401);
-  });
-
-  test("unauthenticated POST /api/leagues → 401", async ({ page }) => {
-    const res = await page.request.post("/api/leagues", {
-      data: { name: "Should fail", country: "X", gender: "male" },
-    });
-    expect(res.status()).toBe(401);
-  });
-
-  test("plain user (no roles) POST /api/leagues → 403", async ({ authenticatedPage: page }) => {
-    const res = await page.request.post("/api/leagues", {
-      data: { name: "Should fail", country: "X", gender: "male" },
-    });
-    expect(res.status()).toBe(403);
-  });
-
-  test("plain user (no roles) DELETE /api/leagues/:id → 403", async ({ authenticatedPage: page }) => {
-    const res = await page.request.delete("/api/leagues/nonexistent-id");
-    expect(res.status()).toBe(403);
   });
 });

@@ -23,18 +23,30 @@ export function Header() {
 
   const getDashboardPath = () => {
     switch (primaryRole) {
-      case "root": return "/root";
-      case "league_admin": return "/admin";
-      case "match_official": return "/official";
-      case "club_admin": return "/team";
-      case "team_admin": return "/team";
-      case "player": return "/player";
-      default: return "/";
+      case "root":
+        return "/root";
+      case "league_admin":
+        return "/admin";
+      case "match_official":
+        return "/official";
+      case "club_admin":
+        return "/club";
+      case "team_admin":
+        return "/team";
+      case "player":
+        return "/player";
+      default:
+        return "/";
     }
   };
 
   const initials = profile?.displayName
-    ? profile.displayName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    ? profile.displayName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
     : user?.email?.[0].toUpperCase() || "?";
 
   return (
@@ -42,22 +54,36 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2">
           <Shield className="h-7 w-7 text-primary-600" />
-          <span className="text-xl font-bold text-gray-900">Hockey Connect</span>
+          <span className="text-xl font-bold text-gray-900">
+            Hockey Connect
+          </span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-gray-600">
-          <Link href="/leagues" className="hover:text-gray-900">Leagues</Link>
-          <Link href="/clubs" className="hover:text-gray-900">Clubs</Link>
-          <Link href="/players" className="hover:text-gray-900">Players</Link>
-          <Link href="/matches" className="hover:text-gray-900">Matches</Link>
-          <Link href="/articles" className="hover:text-gray-900">News</Link>
+          <Link href="/leagues" className="hover:text-gray-900">
+            Leagues
+          </Link>
+          <Link href="/clubs" className="hover:text-gray-900">
+            Clubs
+          </Link>
+          <Link href="/players" className="hover:text-gray-900">
+            Players
+          </Link>
+          <Link href="/matches" className="hover:text-gray-900">
+            Matches
+          </Link>
+          <Link href="/articles" className="hover:text-gray-900">
+            News
+          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
           {user && !user.isAnonymous ? (
             <>
               <Link href={getDashboardPath()}>
-                <Button variant="outline" size="sm">Dashboard</Button>
+                <Button variant="outline" size="sm">
+                  Dashboard
+                </Button>
               </Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -71,8 +97,12 @@ export function Header() {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="flex flex-col gap-0.5">
-                      <span className="font-semibold">{profile?.displayName || "User"}</span>
-                      <span className="text-xs text-gray-500 font-normal">{user.email}</span>
+                      <span className="font-semibold">
+                        {profile?.displayName || "User"}
+                      </span>
+                      <span className="text-xs text-gray-500 font-normal">
+                        {user.email}
+                      </span>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -96,7 +126,9 @@ export function Header() {
           ) : (
             <>
               <Link href="/login">
-                <Button variant="ghost" size="sm">Sign in</Button>
+                <Button variant="ghost" size="sm">
+                  Sign in
+                </Button>
               </Link>
               <Link href="/register">
                 <Button size="sm">Get started</Button>

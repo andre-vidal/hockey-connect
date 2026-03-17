@@ -3,10 +3,10 @@ import { setMaintenanceMode, resetMaintenanceMode } from "../../helpers/firebase
 import { maintenance as maintenanceSel } from "../../helpers/selectors";
 
 /**
- * Phase 1 — Maintenance mode
+ * Public visitor — Maintenance mode
  *
- * Verification criteria from the plan:
- *   "Toggle maintenance mode in RTDB and verify redirect."
+ * Verifies the maintenance mode toggle: when enabled, all visitors are
+ * redirected to /maintenance; when disabled, /maintenance bounces back to /.
  *
  * How it works:
  *   The firebase-cli helper writes to /maintenance/enabled in the Realtime

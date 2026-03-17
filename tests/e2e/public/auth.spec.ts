@@ -2,10 +2,10 @@ import { test, expect } from "@playwright/test";
 import { login as loginSel, register as registerSel } from "../../helpers/selectors";
 
 /**
- * Phase 1 — Authentication
+ * Public visitor — Authentication UI
  *
- * Verification criteria from the plan:
- *   "Login with email/password, Google, and anonymous."
+ * Tests login and registration forms from the perspective of an
+ * unauthenticated visitor. No session cookie is present.
  *
  * Google OAuth cannot be fully automated without a persisted browser profile
  * signed into Google. We verify the button is present and enabled instead.
@@ -37,11 +37,8 @@ test.describe("email/password login", () => {
     await page.locator(loginSel.passwordInput).fill("wrong-password");
     await page.locator(loginSel.submitButton).click();
 
-    // Error message should appear
     await expect(page.locator(loginSel.errorMessage)).toBeVisible({ timeout: 10_000 });
     await expect(page.locator(loginSel.errorMessage)).toContainText("Invalid email or password");
-
-    // Must remain on /login
     await expect(page).toHaveURL(/\/login/);
   });
 

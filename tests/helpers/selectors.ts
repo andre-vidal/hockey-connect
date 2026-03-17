@@ -90,7 +90,8 @@ export const adminOfficials = {
   userSearchFirstResult: "#userSearch + div button, #userSearch ~ div button",
   /** Checkbox label text for official types */
   umpireCheckbox: 'label:has-text("Umpire") input[type="checkbox"]',
-  tableOperatorCheckbox: 'label:has-text("Table Operator") input[type="checkbox"]',
+  tableOperatorCheckbox:
+    'label:has-text("Table Operator") input[type="checkbox"]',
   submitButton: 'button:has-text("Register Official")',
   saveButton: 'button:has-text("Save Changes")',
   deleteButton: 'button:has-text("Delete")',
@@ -103,4 +104,57 @@ export const adminUsers = {
   inviteEmailInput: "#inviteEmail",
   inviteNameInput: "#inviteName",
   sendInviteButton: 'button:has-text("Send Invitation")',
+} as const;
+
+// ── Club admin selectors ──────────────────────────────────────────────────────
+
+export const clubTeams = {
+  newTeamLink: 'a:has-text("New Team")',
+  nameInput: "#name",
+  /** Radix Select trigger for gender */
+  genderTrigger: "#gender",
+  ageGroupInput: "#ageGroup",
+  divisionInput: "#division",
+  submitButton: 'button:has-text("Create Team")',
+  saveButton: 'button:has-text("Save Changes")',
+  /** Destructive button on the edit page */
+  deleteButton: 'button:has-text("Delete")',
+  /** Inside the delete confirmation dialog */
+  confirmDeleteButton: 'button:has-text("Delete Team")',
+} as const;
+
+export const clubPlayers = {
+  addPlayerLink: 'a:has-text("Add Player")',
+  invitePlayerLink: 'a:has-text("Invite Player")',
+  firstNameInput: "#firstName",
+  lastNameInput: "#lastName",
+  emailInput: "#email",
+  /** Radix Select trigger for position */
+  positionTrigger: "#position",
+  /** Radix Select trigger for status (edit page only) */
+  statusTrigger: "#status",
+  submitButton: 'button:has-text("Add Player")',
+  /** Submit button on the invite player form */
+  inviteSubmitButton: 'button:has-text("Send Invitation")',
+  saveButton: 'button:has-text("Save Changes")',
+  /** Destructive button on the edit page — triggers window.confirm() */
+  removeButton: 'button:has-text("Remove")',
+} as const;
+
+export const clubSquads = {
+  newSquadLink: 'a:has-text("New Squad")',
+  /** Radix Select trigger for team */
+  teamTrigger: "#teamId",
+  /** Radix Select trigger for league (shown when League type selected) */
+  leagueTrigger: "#leagueId",
+  seasonInput: "#season",
+  submitButton: 'button:has-text("Create Squad")',
+  submitForApprovalButton: 'button:has-text("Submit for Approval")',
+} as const;
+
+export const clubUsers = {
+  searchInput: 'input[placeholder="Search users..."]',
+  /** Edit button (pencil icon) in the Actions column of each row */
+  editUserButton: 'button:has(.lucide-pencil)',
+  saveButton: 'button:has-text("Save Changes")',
 } as const;

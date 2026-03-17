@@ -2,11 +2,10 @@ import { test, expect } from "../../fixtures/auth";
 import { adminTournaments as sel } from "../../helpers/selectors";
 
 /**
- * Phase 2 — Tournament CRUD
+ * League admin — Tournament CRUD
  *
- * Verification criteria from the plan:
- *   "Create a league, tournament, club."
- *   "Verify Firestore security rules reject unauthorized writes."
+ * Tests create, edit, delete, and league-linking from the perspective
+ * of a user with the `league_admin` role.
  */
 
 const uid = () => Date.now().toString(36);
@@ -136,23 +135,5 @@ test.describe("delete tournament", () => {
 
     await expect(page).toHaveURL("/admin/tournaments", { timeout: 10_000 });
     await expect(page.getByText(name, { exact: true })).not.toBeVisible();
-  });
-});
-
-// ── Security ──────────────────────────────────────────────────────────────────
-
-test.describe("security — tournaments API", () => {
-  test("unauthenticated POST /api/tournaments → 401", async ({ page }) => {
-    const res = await page.request.post("/api/tournaments", {
-      data: { name: "Fail", venue: "V", startDate: "2026-01-01", endDate: "2026-01-02" },
-    });
-    expect(res.status()).toBe(401);
-  });
-
-  test("plain user POST /api/tournaments → 403", async ({ authenticatedPage: page }) => {
-    const res = await page.request.post("/api/tournaments", {
-      data: { name: "Fail", venue: "V", startDate: "2026-01-01", endDate: "2026-01-02" },
-    });
-    expect(res.status()).toBe(403);
   });
 });

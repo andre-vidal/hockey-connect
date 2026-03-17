@@ -74,7 +74,7 @@ export default function EditClubPlayerPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       toast({ title: "Player updated" });
-      setPlayer(data.player);
+      router.push("/club/players");
     } catch (err) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to update", variant: "destructive" });
     } finally {

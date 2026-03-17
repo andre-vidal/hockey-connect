@@ -5,7 +5,8 @@
       "Bash(npm install:*)",
       "Bash(npm run:*)",
       "Bash(firebase database:set /maintenance/enabled --data \"true\" --force --project hockey-connect-decb8)",
-      "Bash(firebase database:set /maintenance/enabled --data \"false\" --force --project hockey-connect-decb8)"
+      "Bash(firebase database:set /maintenance/enabled --data \"false\" --force --project hockey-connect-decb8)",
+      "Bash(ls:*)"
     ]
   },
   "hooks": {
@@ -15,7 +16,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "afplay /System/Library/Sounds/Glass.aiff" 
+            "command": "afplay /System/Library/Sounds/Glass.aiff"
           }
         ]
       }

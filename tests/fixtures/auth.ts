@@ -45,18 +45,47 @@ async function createSession(page: Page, email: string, password: string): Promi
 }
 
 /**
- * Extended Playwright fixtures that provide pre-authenticated pages.
+ * Signs in through the UI so both Firebase client auth state (onAuthStateChanged)
+ * AND the httpOnly session cookie are established. The REST-API-only approach
+ * (createSession) is sufficient for middleware/API tests but not for dashboard
+ * pages that use AuthGuard, which reads roles from AuthProvider client-side.
+ */
+async function createUiSession(
+  page: Page,
+  email: string,
+  password: string,
+  redirectUrl: string
+): Promise<void> {
+  await page.goto("/login");
+  await page.waitForURL("/login", { timeout: 15_000 });
+  await page.locator("#email").fill(email);
+  await page.locator("#password").fill(password);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL(redirectUrl, { timeout: 15_000 });
+}
+
+/**
+ * Extended Playwright fixtures that provide pre-authenticated pages for each
+ * user role in the system.
  *
  * Usage in a test file:
  *   import { test, expect } from "../../fixtures/auth";
  *   test("...", async ({ authenticatedPage }) => { ... });
  *   test("...", async ({ leagueAdminPage }) => { ... });
+ *   test("...", async ({ matchOfficialPage }) => { ... });
+ *   test("...", async ({ teamAdminPage }) => { ... });
  */
 export const test = base.extend<{
   /** A page with a valid session cookie for TEST_USER_EMAIL (no roles) */
   authenticatedPage: Page;
-  /** A page with a valid session cookie for LEAGUE_ADMIN_EMAIL (league_admin role) */
+  /** A page signed in as LEAGUE_ADMIN_EMAIL (league_admin role) */
   leagueAdminPage: Page;
+  /** A page signed in as CLUB_ADMIN_EMAIL (club_admin role) */
+  clubAdminPage: Page;
+  /** A page signed in as MATCH_OFFICIAL_EMAIL (match_official role) */
+  matchOfficialPage: Page;
+  /** A page signed in as TEAM_ADMIN_EMAIL (team_admin role) */
+  teamAdminPage: Page;
 }>({
   authenticatedPage: async ({ page }, use) => {
     const email = process.env.TEST_USER_EMAIL;
@@ -67,22 +96,44 @@ export const test = base.extend<{
     await createSession(page, email, password);
     await use(page);
   },
+
   leagueAdminPage: async ({ page }, use) => {
     const email = process.env.LEAGUE_ADMIN_EMAIL;
     const password = process.env.LEAGUE_ADMIN_PASSWORD;
     if (!email || !password) {
       throw new Error("LEAGUE_ADMIN_EMAIL and LEAGUE_ADMIN_PASSWORD must be set in .env.test");
     }
-    // Sign in through the UI so both Firebase client auth state (onAuthStateChanged)
-    // AND the httpOnly session cookie are established. The REST-API-only approach
-    // (createSession) is sufficient for middleware/API tests but not for dashboard
-    // pages that use AuthGuard, which reads roles from AuthProvider client-side.
-    await page.goto("/login");
-    await page.waitForURL("/login", { timeout: 15_000 });
-    await page.locator("#email").fill(email);
-    await page.locator("#password").fill(password);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL("/admin", { timeout: 15_000 });
+    await createUiSession(page, email, password, "/admin");
+    await use(page);
+  },
+
+  clubAdminPage: async ({ page }, use) => {
+    const email = process.env.CLUB_ADMIN_EMAIL;
+    const password = process.env.CLUB_ADMIN_PASSWORD;
+    if (!email || !password) {
+      throw new Error("CLUB_ADMIN_EMAIL and CLUB_ADMIN_PASSWORD must be set in .env.test");
+    }
+    await createUiSession(page, email, password, "/club");
+    await use(page);
+  },
+
+  matchOfficialPage: async ({ page }, use) => {
+    const email = process.env.MATCH_OFFICIAL_EMAIL;
+    const password = process.env.MATCH_OFFICIAL_PASSWORD;
+    if (!email || !password) {
+      throw new Error("MATCH_OFFICIAL_EMAIL and MATCH_OFFICIAL_PASSWORD must be set in .env.test");
+    }
+    await createUiSession(page, email, password, "/official");
+    await use(page);
+  },
+
+  teamAdminPage: async ({ page }, use) => {
+    const email = process.env.TEAM_ADMIN_EMAIL;
+    const password = process.env.TEAM_ADMIN_PASSWORD;
+    if (!email || !password) {
+      throw new Error("TEAM_ADMIN_EMAIL and TEAM_ADMIN_PASSWORD must be set in .env.test");
+    }
+    await createUiSession(page, email, password, "/team");
     await use(page);
   },
 });

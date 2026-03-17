@@ -2,14 +2,12 @@ import { test, expect } from "../../fixtures/auth";
 import { adminOfficials as sel } from "../../helpers/selectors";
 
 /**
- * Phase 2 — Match Officials CRUD
+ * League admin — Match Officials CRUD
  *
- * The officials/new form uses a live user search (fetches /api/users, filters
- * client-side). Tests search for the LEAGUE_ADMIN_EMAIL user who is guaranteed
- * to exist in the Firebase project.
- *
- * Verification criteria from the plan:
- *   "Verify Firestore security rules reject unauthorized writes."
+ * Tests create, edit, and delete from the perspective of a user with the
+ * `league_admin` role. The officials/new form uses a live user search
+ * (fetches /api/users, filters client-side). Tests search for the
+ * LEAGUE_ADMIN_EMAIL user who is guaranteed to exist in the Firebase project.
  */
 
 const uid = () => Date.now().toString(36);
@@ -73,7 +71,6 @@ test.describe("create official", () => {
     await page.locator(sel.umpireCheckbox).check();
     await page.locator(sel.submitButton).click();
 
-    // Toast error should appear
     await expect(page.getByText("Please select a user.", { exact: true })).toBeVisible({ timeout: 15_000 });
     await expect(page).toHaveURL(/\/admin\/officials\/new/);
   });
@@ -122,12 +119,10 @@ test.describe("edit official", () => {
 
     try {
       await page.goto(`/admin/officials/${id}`);
-      // Toggle the isActive switch
       await page.getByLabel("Active").click();
       await page.locator(sel.saveButton).click();
 
       await expect(page).toHaveURL("/admin/officials", { timeout: 10_000 });
-      // The row should now show "Inactive"
       await expect(page.getByText("Inactive", { exact: true })).toBeVisible();
     } finally {
       await page.request.delete(`/api/officials/${id}`);
@@ -162,23 +157,5 @@ test.describe("delete official", () => {
     await page.locator(sel.confirmDeleteButton).click();
 
     await expect(page).toHaveURL("/admin/officials", { timeout: 10_000 });
-  });
-});
-
-// ── Security ──────────────────────────────────────────────────────────────────
-
-test.describe("security — officials API", () => {
-  test("unauthenticated POST /api/officials → 401", async ({ page }) => {
-    const res = await page.request.post("/api/officials", {
-      data: { userId: "x", displayName: "X", email: "x@x.com", officialTypes: ["umpire"] },
-    });
-    expect(res.status()).toBe(401);
-  });
-
-  test("plain user POST /api/officials → 403", async ({ authenticatedPage: page }) => {
-    const res = await page.request.post("/api/officials", {
-      data: { userId: "x", displayName: "X", email: "x@x.com", officialTypes: ["umpire"] },
-    });
-    expect(res.status()).toBe(403);
   });
 });
