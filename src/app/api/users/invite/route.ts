@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
       email,
       displayName,
       photoURL: null,
-      roles: ["team_admin"],
+      roles: ["club_admin"],
       clubId: clubId ?? null,
       isActive: true,
       isAnonymous: false,

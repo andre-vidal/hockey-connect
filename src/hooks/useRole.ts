@@ -7,6 +7,7 @@ export function useRole() {
   const isRoot = hasRole("root");
   const isLeagueAdmin = hasRole("league_admin");
   const isMatchOfficial = hasRole("match_official");
+  const isClubAdmin = hasRole("club_admin");
   const isTeamAdmin = hasRole("team_admin");
   const isPlayer = hasRole("player");
 
@@ -16,6 +17,8 @@ export function useRole() {
     ? "league_admin"
     : isMatchOfficial
     ? "match_official"
+    : isClubAdmin
+    ? "club_admin"
     : isTeamAdmin
     ? "team_admin"
     : isPlayer
@@ -28,6 +31,7 @@ export function useRole() {
     isRoot,
     isLeagueAdmin,
     isMatchOfficial,
+    isClubAdmin,
     isTeamAdmin,
     isPlayer,
     hasRole,

@@ -3,9 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 const ADMIN_PATHS = ["/admin"];
 const ROOT_PATHS = ["/root"];
 const OFFICIAL_PATHS = ["/official"];
+const CLUB_PATHS = ["/club"];
 const TEAM_PATHS = ["/team"];
 const PLAYER_PATHS = ["/player"];
-const DASHBOARD_PATHS = [...ROOT_PATHS, ...ADMIN_PATHS, ...OFFICIAL_PATHS, ...TEAM_PATHS, ...PLAYER_PATHS];
+const DASHBOARD_PATHS = [...ROOT_PATHS, ...ADMIN_PATHS, ...OFFICIAL_PATHS, ...CLUB_PATHS, ...TEAM_PATHS, ...PLAYER_PATHS];
 
 function isDashboardPath(pathname: string): boolean {
   return DASHBOARD_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"));

@@ -18,6 +18,10 @@ service cloud.firestore {
       return hasRole('match_official');
     }
 
+    function isClubAdmin() {
+      return hasRole('club_admin');
+    }
+
     function isTeamAdmin() {
       return hasRole('team_admin');
     }
@@ -64,12 +68,57 @@ service cloud.firestore {
     match /clubs/{clubId} {
       allow read: if true;
       allow write: if isLeagueAdmin();
+
+      // Teams - club_admin or team_admin of same club can read; only club_admin can create/delete
+      match /teams/{teamId} {
+        allow read: if isAuthenticated();
+        allow create: if isLeagueAdmin() || (isClubAdmin() && request.auth.token.clubId == clubId);
+        allow update: if isLeagueAdmin() || (isClubAdmin() && request.auth.token.clubId == clubId);
+        allow delete: if isLeagueAdmin() || (isClubAdmin() && request.auth.token.clubId == clubId);
+      }
+
+      // Players - club_admin can manage; team_admin can read; player can update own
+      match /players/{playerId} {
+        allow read: if isAuthenticated();
+        allow create: if isLeagueAdmin() || (isClubAdmin() && request.auth.token.clubId == clubId);
+        allow update: if isLeagueAdmin()
+          || (isClubAdmin() && request.auth.token.clubId == clubId)
+          || (isPlayer() && resource.data.claimedByUserId == request.auth.uid);
+        allow delete: if isLeagueAdmin() || (isClubAdmin() && request.auth.token.clubId == clubId);
+      }
     }
 
     // Match officials - authenticated read, league_admin write
     match /officials/{officialId} {
       allow read: if isAuthenticated();
       allow write: if isLeagueAdmin();
+    }
+
+    // Squads - club_admin has full club-scope access; team_admin has team-scope access
+    match /squads/{squadId} {
+      allow read: if isAuthenticated();
+      allow create: if isLeagueAdmin()
+        || (isClubAdmin() && request.auth.token.clubId == resource.data.clubId)
+        || (isTeamAdmin() && request.auth.token.clubId == resource.data.clubId && resource.data.teamId in request.auth.token.teamIds);
+      allow update: if isLeagueAdmin()
+        || (isClubAdmin() && request.auth.token.clubId == resource.data.clubId)
+        || (isTeamAdmin() && request.auth.token.clubId == resource.data.clubId && resource.data.teamId in request.auth.token.teamIds);
+      allow delete: if isLeagueAdmin()
+        || (isClubAdmin() && request.auth.token.clubId == resource.data.clubId)
+        || (isTeamAdmin() && request.auth.token.clubId == resource.data.clubId && resource.data.teamId in request.auth.token.teamIds);
+    }
+
+    // Match rosters
+    match /matchRosters/{rosterId} {
+      allow read: if isAuthenticated();
+      allow create: if isLeagueAdmin()
+        || isMatchOfficial()
+        || (isClubAdmin() && request.auth.token.clubId == resource.data.clubId)
+        || (isTeamAdmin() && request.auth.token.clubId == resource.data.clubId && resource.data.teamId in request.auth.token.teamIds);
+      allow update: if isLeagueAdmin()
+        || (isClubAdmin() && request.auth.token.clubId == resource.data.clubId)
+        || (isTeamAdmin() && request.auth.token.clubId == resource.data.clubId && resource.data.teamId in request.auth.token.teamIds);
+      allow delete: if isLeagueAdmin();
     }
 
     // All other collections - league admin has full access

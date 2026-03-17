@@ -1,4 +1,4 @@
-export type UserRole = "root" | "league_admin" | "match_official" | "team_admin" | "player" | "public";
+export type UserRole = "root" | "league_admin" | "match_official" | "club_admin" | "team_admin" | "player" | "public";
 
 export interface UserProfile {
   uid: string;
@@ -6,7 +6,10 @@ export interface UserProfile {
   displayName: string | null;
   photoURL: string | null;
   roles: UserRole[];
+  /** Set for club_admin and team_admin — the club they belong to */
   clubId?: string | null;
+  /** Set for team_admin — the specific team(s) they manage within the club */
+  teamIds?: string[];
   createdAt: string;
   updatedAt: string;
   isActive: boolean;
@@ -106,6 +109,101 @@ export interface Club {
 }
 
 export type OfficialType = "umpire" | "table_operator" | "technical_delegate" | "medical_officer";
+
+// Phase 3: Player & Team Management
+
+export type PlayerStatus = "active" | "inactive" | "injured" | "suspended";
+
+export type Position =
+  | "goalkeeper"
+  | "defender"
+  | "midfielder"
+  | "forward"
+  | "utility";
+
+export interface Player {
+  id: string;
+  clubId: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone?: string;
+  dateOfBirth?: string; // ISO date string
+  gender?: Gender;
+  nationality?: string;
+  position?: Position;
+  jerseyNumber?: number;
+  photoUrl?: string;
+  status: PlayerStatus;
+  /** null until the player registers via invite link */
+  claimedByUserId: string | null;
+  inviteToken?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+export interface Team {
+  id: string;
+  clubId: string;
+  name: string;
+  gender: Gender;
+  ageGroup?: string;
+  division?: string;
+  leagueId?: string;
+  /** Admin user uid scoped to this team */
+  teamAdminId?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+export type SquadStatus = "draft" | "submitted" | "approved" | "rejected";
+
+export interface SquadPlayer {
+  playerId: string;
+  jerseyNumber: number;
+  position: Position;
+}
+
+export interface Squad {
+  id: string;
+  teamId: string;
+  clubId: string;
+  /** Either leagueId or tournamentId must be set */
+  leagueId?: string;
+  tournamentId?: string;
+  season?: string;
+  status: SquadStatus;
+  players: SquadPlayer[];
+  submittedAt?: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+export interface MatchRosterPlayer {
+  playerId: string;
+  jerseyNumber: number;
+  position: Position;
+  isSubstitute: boolean;
+}
+
+export interface MatchRoster {
+  id: string;
+  matchId: string;
+  teamId: string;
+  clubId: string;
+  squadId: string;
+  players: MatchRosterPlayer[];
+  submittedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
 
 export interface MatchOfficial {
   id: string;

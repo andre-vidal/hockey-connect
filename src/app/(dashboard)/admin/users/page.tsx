@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { DataTable, Column } from "@/components/ui/data-table";
@@ -10,29 +10,64 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter } from "@/components/ui/modal";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/useToast";
+import { useRole } from "@/hooks/useRole";
 import { UserProfile, Club, UserRole } from "@/types";
-import { UserPlus, ToggleLeft, ToggleRight } from "lucide-react";
+import { UserPlus, Pencil } from "lucide-react";
+
+const ALL_ROLES: UserRole[] = ["root", "league_admin", "match_official", "club_admin", "team_admin", "player", "public"];
+
+// Lower = more privileged
+const ROLE_LEVEL: Record<UserRole, number> = {
+  root: 0,
+  league_admin: 1,
+  match_official: 2,
+  club_admin: 2,
+  team_admin: 3,
+  player: 4,
+  public: 5,
+};
 
 const roleColors: Record<UserRole, "default" | "secondary" | "warning" | "success" | "outline"> = {
   root: "default",
   league_admin: "default",
   match_official: "warning",
+  club_admin: "success",
   team_admin: "success",
   player: "secondary",
   public: "outline",
 };
 
+function callerMinLevel(roles: UserRole[]): number {
+  if (roles.length === 0) return 99;
+  return Math.min(...roles.map((r) => ROLE_LEVEL[r] ?? 99));
+}
+
+interface EditForm {
+  roles: UserRole[];
+  isActive: boolean;
+  clubId: string;
+}
+
 export default function UsersPage() {
   const { toast } = useToast();
+  const { roles: myRoles, isRoot, isLeagueAdmin } = useRole();
+
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Invite modal
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", displayName: "", clubId: "" });
   const [inviting, setInviting] = useState(false);
-  const [togglingUid, setTogglingUid] = useState<string | null>(null);
+
+  // Edit modal
+  const [editTarget, setEditTarget] = useState<UserProfile | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>({ roles: [], isActive: true, clubId: "" });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -48,29 +83,55 @@ export default function UsersPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function toggleUserActive(user: UserProfile) {
-    setTogglingUid(user.uid);
+  function openEdit(user: UserProfile) {
+    setEditTarget(user);
+    setEditForm({
+      roles: user.roles ?? [],
+      isActive: user.isActive,
+      clubId: user.clubId ?? "",
+    });
+  }
+
+  function toggleEditRole(role: UserRole) {
+    setEditForm((f) => ({
+      ...f,
+      roles: f.roles.includes(role) ? f.roles.filter((r) => r !== role) : [...f.roles, role],
+    }));
+  }
+
+  const handleSave = useCallback(async () => {
+    if (!editTarget) return;
+    setSaving(true);
     try {
-      const res = await fetch(`/api/users/${user.uid}`, {
+      const payload: Record<string, unknown> = {
+        roles: editForm.roles,
+        isActive: editForm.isActive,
+      };
+      if (isLeagueAdmin || isRoot) {
+        payload.clubId = editForm.clubId || null;
+      }
+      const res = await fetch(`/api/users/${editTarget.uid}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: !user.isActive }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to update user");
       setUsers((prev) =>
-        prev.map((u) => (u.uid === user.uid ? { ...u, isActive: !u.isActive } : u))
+        prev.map((u) =>
+          u.uid === editTarget.uid
+            ? { ...u, roles: editForm.roles, isActive: editForm.isActive, clubId: editForm.clubId || null }
+            : u
+        )
       );
-      toast({
-        title: "User updated",
-        description: `${user.displayName ?? user.email} has been ${!user.isActive ? "activated" : "deactivated"}.`,
-      });
+      toast({ title: "User updated" });
+      setEditTarget(null);
     } catch (err) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to update user", variant: "destructive" });
     } finally {
-      setTogglingUid(null);
+      setSaving(false);
     }
-  }
+  }, [editTarget, editForm, isLeagueAdmin, isRoot, toast]);
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
@@ -90,7 +151,6 @@ export default function UsersPage() {
       toast({ title: "Invite sent", description: `Invitation sent to ${inviteForm.email}.` });
       setShowInviteModal(false);
       setInviteForm({ email: "", displayName: "", clubId: "" });
-      // Refresh users list
       fetch("/api/users")
         .then((r) => r.json())
         .then((d) => setUsers(d.users ?? []))
@@ -101,6 +161,10 @@ export default function UsersPage() {
       setInviting(false);
     }
   }
+
+  // Roles the current user is allowed to assign (same level or below)
+  const myLevel = callerMinLevel(myRoles);
+  const assignableRoles = ALL_ROLES.filter((r) => ROLE_LEVEL[r] >= myLevel);
 
   const columns: Column<UserProfile & Record<string, unknown>>[] = [
     {
@@ -129,12 +193,15 @@ export default function UsersPage() {
     },
     {
       key: "clubId",
-      header: "Club ID",
-      cell: (row) => <span className="text-xs text-gray-500 font-mono">{(row.clubId as string) || "—"}</span>,
+      header: "Club",
+      cell: (row) => {
+        const club = clubs.find((c) => c.id === (row.clubId as string));
+        return <span className="text-sm text-gray-600">{club?.name ?? (row.clubId ? "—" : "None")}</span>;
+      },
     },
     {
       key: "isActive",
-      header: "Active",
+      header: "Status",
       cell: (row) => (
         <Badge variant={row.isActive ? "success" : "secondary"}>
           {row.isActive ? "Active" : "Inactive"}
@@ -146,21 +213,14 @@ export default function UsersPage() {
       header: "Actions",
       cell: (row) => {
         const user = row as unknown as UserProfile;
-        const isToggling = togglingUid === user.uid;
         return (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => toggleUserActive(user)}
-            disabled={isToggling}
-            title={user.isActive ? "Deactivate user" : "Activate user"}
+            onClick={() => openEdit(user)}
+            title="Edit user"
           >
-            {user.isActive ? (
-              <ToggleRight className="h-4 w-4 text-green-600" />
-            ) : (
-              <ToggleLeft className="h-4 w-4 text-gray-400" />
-            )}
-            <span className="ml-1.5">{user.isActive ? "Deactivate" : "Activate"}</span>
+            <Pencil className="h-4 w-4" />
           </Button>
         );
       },
@@ -168,15 +228,17 @@ export default function UsersPage() {
   ];
 
   return (
-    <AuthGuard requiredRoles={["league_admin"]}>
+    <AuthGuard requiredRoles={["league_admin", "club_admin"]}>
       <DashboardShell
         title="Users"
         description="Manage registered users and their access."
         actions={
-          <Button onClick={() => setShowInviteModal(true)}>
-            <UserPlus className="h-4 w-4 mr-1" />
-            Invite Club Admin
-          </Button>
+          (isLeagueAdmin || isRoot) ? (
+            <Button onClick={() => setShowInviteModal(true)}>
+              <UserPlus className="h-4 w-4 mr-1" />
+              Invite Club Admin
+            </Button>
+          ) : undefined
         }
       >
         {error && (
@@ -192,6 +254,89 @@ export default function UsersPage() {
           loading={loading}
           emptyMessage="No users found."
         />
+
+        {/* Edit User Modal */}
+        <Modal open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Edit User</ModalTitle>
+            </ModalHeader>
+            <div className="space-y-5 mt-4">
+              {/* Name / email (read-only) */}
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-gray-700">{editTarget?.displayName || editTarget?.email}</p>
+                {editTarget?.displayName && (
+                  <p className="text-xs text-gray-400">{editTarget.email}</p>
+                )}
+              </div>
+
+              {/* Roles multi-select */}
+              <div className="space-y-2">
+                <Label>Roles</Label>
+                <div className="rounded-md border border-gray-200 divide-y divide-gray-100">
+                  {assignableRoles.map((role) => (
+                    <label
+                      key={role}
+                      className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-gray-50"
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        checked={editForm.roles.includes(role)}
+                        onChange={() => toggleEditRole(role)}
+                      />
+                      <span className="text-sm capitalize">{role.replace(/_/g, " ")}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Club assignment — only editable by league_admin / root */}
+              <div className="space-y-1">
+                <Label htmlFor="editClub">
+                  Club
+                  {!isLeagueAdmin && !isRoot && (
+                    <span className="ml-2 text-xs text-gray-400">(managed by League Admin)</span>
+                  )}
+                </Label>
+                <Select
+                  value={editForm.clubId || "none"}
+                  onValueChange={(v) => setEditForm((f) => ({ ...f, clubId: v === "none" ? "" : v }))}
+                  disabled={!isLeagueAdmin && !isRoot}
+                >
+                  <SelectTrigger id="editClub">
+                    <SelectValue placeholder="No club assigned" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No club</SelectItem>
+                    {clubs.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Active toggle */}
+              <div className="flex items-center justify-between">
+                <Label htmlFor="editActive">Active</Label>
+                <Switch
+                  id="editActive"
+                  checked={editForm.isActive}
+                  onCheckedChange={(checked) => setEditForm((f) => ({ ...f, isActive: checked }))}
+                />
+              </div>
+            </div>
+
+            <ModalFooter>
+              <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
 
         {/* Invite Modal */}
         <Modal open={showInviteModal} onOpenChange={setShowInviteModal}>

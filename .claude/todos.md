@@ -1,1 +1,4 @@
 - role change feature
+- team admin should not be able to update their own assigned teams. That should be assigned by the club admin when creating or updating the team
+- refactor the test suite to be organized by user role/journey instead of by phases
+- maintenance mode controlled by user type

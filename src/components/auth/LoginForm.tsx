@@ -16,6 +16,7 @@ function dashboardForRoles(roles: string[]): string {
   if (roles.includes("root")) return "/root";
   if (roles.includes("league_admin")) return "/admin";
   if (roles.includes("match_official")) return "/official";
+  if (roles.includes("club_admin")) return "/club";
   if (roles.includes("team_admin")) return "/team";
   if (roles.includes("player")) return "/player";
   return "/";

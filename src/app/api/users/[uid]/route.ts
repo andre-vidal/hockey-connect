@@ -4,15 +4,34 @@ import { adminAuth, adminDb } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
-async function verifyLeagueAdmin() {
+// Lower number = more privileged
+const ROLE_LEVEL: Record<string, number> = {
+  root: 0,
+  league_admin: 1,
+  match_official: 2,
+  club_admin: 2,
+  team_admin: 3,
+  player: 4,
+  public: 5,
+};
+
+function minLevel(roles: string[]): number {
+  if (roles.length === 0) return 99;
+  return Math.min(...roles.map((r) => ROLE_LEVEL[r] ?? 99));
+}
+
+async function verifyAuth() {
   const cookieStore = await cookies();
   const session = cookieStore.get("session")?.value;
   if (!session) throw new Error("Unauthorized");
   const decoded = await adminAuth.verifySessionCookie(session, true);
   const userDoc = await adminDb.collection("users").doc(decoded.uid).get();
-  const roles = userDoc.data()?.roles ?? [];
-  if (!roles.includes("league_admin") && !roles.includes("root")) throw new Error("Forbidden");
-  return decoded;
+  const data = userDoc.data();
+  const roles: string[] = data?.roles ?? [];
+  const isLeagueAdmin = roles.includes("league_admin") || roles.includes("root");
+  const isClubAdmin = roles.includes("club_admin");
+  if (!isLeagueAdmin && !isClubAdmin) throw new Error("Forbidden");
+  return { callerUid: decoded.uid, roles, isLeagueAdmin, isClubAdmin };
 }
 
 export async function PUT(
@@ -20,29 +39,54 @@ export async function PUT(
   { params }: { params: Promise<{ uid: string }> }
 ) {
   try {
-    await verifyLeagueAdmin();
+    const { callerUid, roles: callerRoles, isLeagueAdmin } = await verifyAuth();
     const { uid } = await params;
-    const body = await request.json();
-    const { isActive } = body;
-
-    if (typeof isActive !== "boolean") {
-      return NextResponse.json({ error: "isActive (boolean) is required" }, { status: 400 });
-    }
 
     const doc = await adminDb.collection("users").doc(uid).get();
     if (!doc.exists) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Update Firestore
-    await adminDb.collection("users").doc(uid).update({
-      isActive,
-      updatedAt: new Date().toISOString(),
-    });
+    const targetRoles: string[] = doc.data()?.roles ?? [];
+    const callerLvl = minLevel(callerRoles);
+    const targetLvl = minLevel(targetRoles);
 
-    // Update Firebase Auth disabled state
-    await adminAuth.updateUser(uid, { disabled: !isActive });
+    // Caller can only edit users at the same privilege level or below (not more privileged)
+    // A user may always edit themselves
+    if (callerUid !== uid && targetLvl < callerLvl) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
+    const body = await request.json();
+    const { isActive, roles: newRoles, clubId } = body;
+
+    const updates: Record<string, unknown> = { updatedAt: new Date().toISOString() };
+
+    if (typeof isActive === "boolean") {
+      updates.isActive = isActive;
+      await adminAuth.updateUser(uid, { disabled: !isActive });
+    }
+
+    if (Array.isArray(newRoles)) {
+      // Caller can only assign roles at their own level or below
+      const forbidden = (newRoles as string[]).filter((r) => (ROLE_LEVEL[r] ?? 99) < callerLvl);
+      if (forbidden.length > 0) {
+        return NextResponse.json(
+          { error: `Cannot assign roles with higher privilege: ${forbidden.join(", ")}` },
+          { status: 403 }
+        );
+      }
+      updates.roles = newRoles;
+      // Refresh custom claims so security rules stay in sync
+      await adminAuth.setCustomUserClaims(uid, { roles: newRoles });
+    }
+
+    // Only root and league_admin can change clubId
+    if (clubId !== undefined && isLeagueAdmin) {
+      updates.clubId = clubId || null;
+    }
+
+    await adminDb.collection("users").doc(uid).update(updates);
     const updated = await adminDb.collection("users").doc(uid).get();
     return NextResponse.json({ user: { id: updated.id, ...updated.data() } });
   } catch (error) {

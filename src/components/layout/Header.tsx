@@ -26,6 +26,7 @@ export function Header() {
       case "root": return "/root";
       case "league_admin": return "/admin";
       case "match_official": return "/official";
+      case "club_admin": return "/team";
       case "team_admin": return "/team";
       case "player": return "/player";
       default: return "/";

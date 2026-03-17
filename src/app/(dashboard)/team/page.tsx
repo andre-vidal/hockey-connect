@@ -3,13 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function TeamDashboardPage() {
   return (
-    <DashboardShell title="Team Dashboard" description="Manage your players, squads, and matches">
+    <DashboardShell title="Team Dashboard" description="View your team details and manage squad submissions.">
       <Card>
         <CardHeader>
           <CardTitle>Team Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-gray-500">Set up your team by adding players and building your squad.</p>
+          <p className="text-sm text-gray-500">Use the navigation to view your team, players, and manage squad submissions.</p>
         </CardContent>
       </Card>
     </DashboardShell>
