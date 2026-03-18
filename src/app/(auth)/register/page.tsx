@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import { Shield } from "lucide-react";
 import Link from "next/link";
@@ -9,7 +10,9 @@ export default function RegisterPage() {
         <Shield className="h-8 w-8 text-primary-600" />
         <span className="text-2xl font-bold text-gray-900">Hockey Connect</span>
       </Link>
-      <RegisterForm />
+      <Suspense fallback={null}>
+        <RegisterForm />
+      </Suspense>
     </div>
   );
 }

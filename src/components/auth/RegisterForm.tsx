@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signUpWithEmail, signInWithGoogle } from "@/lib/firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
@@ -14,12 +14,35 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const inviteType = searchParams.get("invite");
+  const inviteClubId = searchParams.get("clubId");
+  const invitePlayerId = searchParams.get("playerId");
+  const inviteToken = searchParams.get("token");
+  const inviteEmail = searchParams.get("email");
+
+  const isPlayerInvite = inviteType === "player" && !!inviteClubId && !!invitePlayerId && !!inviteToken;
+
   const [displayName, setDisplayName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(() => inviteEmail ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function claimPlayerProfile() {
+    if (!isPlayerInvite) return;
+    const res = await fetch(`/api/clubs/${inviteClubId}/players/${invitePlayerId}/claim`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: inviteToken }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error ?? "Failed to claim player profile");
+    }
+  }
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
@@ -55,7 +78,17 @@ export function RegisterForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken }),
       });
-      router.push("/");
+      if (isPlayerInvite) {
+        try {
+          await claimPlayerProfile();
+          router.push("/player");
+        } catch (claimErr) {
+          setError(claimErr instanceof Error ? claimErr.message : "Failed to claim player profile");
+          router.push("/");
+        }
+      } else {
+        router.push("/");
+      }
     } catch (err: unknown) {
       if (err instanceof Error && err.message.includes("email-already-in-use")) {
         setError("An account with this email already exists.");
@@ -92,7 +125,17 @@ export function RegisterForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idToken }),
       });
-      router.push("/");
+      if (isPlayerInvite) {
+        try {
+          await claimPlayerProfile();
+          router.push("/player");
+        } catch (claimErr) {
+          setError(claimErr instanceof Error ? claimErr.message : "Failed to claim player profile");
+          router.push("/");
+        }
+      } else {
+        router.push("/");
+      }
     } catch {
       setError("Failed to sign up with Google. Please try again.");
     } finally {

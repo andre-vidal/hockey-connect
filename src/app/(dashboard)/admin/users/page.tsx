@@ -135,8 +135,8 @@ export default function UsersPage() {
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
-    if (!inviteForm.email || !inviteForm.displayName) {
-      toast({ title: "Required", description: "Email and display name are required.", variant: "destructive" });
+    if (!inviteForm.email || !inviteForm.displayName || !inviteForm.clubId) {
+      toast({ title: "Validation Error", description: "Email, display name, and club are required.", variant: "destructive" });
       return;
     }
     setInviting(true);
@@ -367,16 +367,15 @@ export default function UsersPage() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="inviteClub">Club</Label>
+                <Label htmlFor="inviteClub">Club <span className="text-red-500">*</span></Label>
                 <Select
-                  value={inviteForm.clubId || "none"}
-                  onValueChange={(v) => setInviteForm((p) => ({ ...p, clubId: v === "none" ? "" : v }))}
+                  value={inviteForm.clubId}
+                  onValueChange={(v) => setInviteForm((p) => ({ ...p, clubId: v }))}
                 >
                   <SelectTrigger id="inviteClub">
                     <SelectValue placeholder="Select a club..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No club</SelectItem>
                     {clubs.map((c) => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}

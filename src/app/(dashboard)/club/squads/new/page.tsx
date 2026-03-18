@@ -45,6 +45,10 @@ export default function NewClubSquadPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.teamId || (competitionType === "league" ? !form.leagueId : !form.tournamentId)) {
+      toast({ title: "Validation Error", description: "Team and league/tournament selection are required.", variant: "destructive" });
+      return;
+    }
     if (!profile?.clubId) return;
     setSaving(true);
     try {
@@ -141,7 +145,7 @@ export default function NewClubSquadPage() {
                 </div>
 
                 <div className="flex gap-2 pt-2">
-                  <Button type="submit" disabled={saving || !form.teamId || (competitionType === "league" ? !form.leagueId : !form.tournamentId)}>
+                  <Button type="submit" disabled={saving}>
                     {saving ? "Creating..." : "Create Squad"}
                   </Button>
                   <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>

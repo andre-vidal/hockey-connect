@@ -26,12 +26,18 @@ tests/
 │   │   ├── officials.spec.ts      — Official registration (user search) + CRUD
 │   │   └── users.spec.ts          — User list, invite modal, activate/deactivate
 │   │
-│   └── club_admin/                — user with the `club_admin` role (scoped to one club)
-│       ├── teams.spec.ts          — Team CRUD within own club
-│       ├── players.spec.ts        — Player CRUD + invite within own club
-│       ├── squads.spec.ts         — Squad creation and player management
-│       ├── users.spec.ts          — Club user listing and role editing
-│       └── security.spec.ts       — 403 for league-admin endpoints; cross-club isolation
+│   ├── club_admin/                — user with the `club_admin` role (scoped to one club)
+│   │   ├── teams.spec.ts          — Team CRUD within own club
+│   │   ├── players.spec.ts        — Player CRUD + invite within own club
+│   │   ├── squads.spec.ts         — Squad creation and player management
+│   │   ├── users.spec.ts          — Club user listing and role editing
+│   │   └── security.spec.ts       — 403 for league-admin endpoints; cross-club isolation
+│   │
+│   └── team_admin/                — user with the `team_admin` role (scoped to assigned teams)
+│       ├── teams.spec.ts          — Team edit (no create/delete); read-only team admin field
+│       ├── players.spec.ts        — Player roster view (read-only); status filter
+│       ├── squads.spec.ts         — Squad creation, player management, submit for approval
+│       └── security.spec.ts       — 403 for league/club-admin endpoints; cross-club isolation
 │
 ├── fixtures/
 │   ├── auth.ts                    — Playwright fixtures: authenticatedPage, leagueAdminPage,
@@ -67,6 +73,8 @@ cp .env.test.example .env.test
 | `MATCH_OFFICIAL_PASSWORD`      | Password for the match official account                    |
 | `TEAM_ADMIN_EMAIL`             | Email of an account with the `team_admin` role             |
 | `TEAM_ADMIN_PASSWORD`          | Password for the team admin account                        |
+| `TEAM_ADMIN_CLUB_ID`           | Firestore ID of the club this team admin belongs to        |
+| `TEAM_ADMIN_OPEN_LEAGUE_ID`    | Firestore ID of a pre-seeded league (used for squad tests) |
 | `ROOT_EMAIL`                   | Email of a developer/root account                          |
 | `ROOT_PASSWORD`                | Password for the root account                              |
 | `FIREBASE_PROJECT_ID`          | Firebase project ID (same as in `.env.local`)              |

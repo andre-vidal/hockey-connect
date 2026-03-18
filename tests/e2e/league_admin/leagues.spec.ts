@@ -93,17 +93,18 @@ test.describe("edit league", () => {
 test.describe("delete league", () => {
   test("confirm delete → league removed from list", async ({ leagueAdminPage: page }) => {
     const name = `League ${uid()}`;
-    const res = await page.request.post("/api/leagues", {
+    await page.request.post("/api/leagues", {
       data: { name, country: "Testland", gender: "female" },
     });
-    const { league: { id } } = await res.json();
 
-    await page.goto(`/admin/leagues/${id}`);
-    await page.locator(sel.deleteButton).click();
+    await page.goto("/admin/leagues");
+
+    const row = page.getByRole("row").filter({ hasText: name });
+    await expect(row).toBeVisible({ timeout: 10_000 });
+    await row.locator(sel.deleteButton).click();
     await page.locator(sel.confirmDeleteButton).click();
 
-    await expect(page).toHaveURL("/admin/leagues", { timeout: 10_000 });
-    await expect(page.getByText(name, { exact: true })).not.toBeVisible();
+    await expect(row).not.toBeVisible({ timeout: 10_000 });
   });
 });
 

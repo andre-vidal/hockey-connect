@@ -16,22 +16,63 @@ const uid = () => Date.now().toString(36);
 // ── List & navigation ─────────────────────────────────────────────────────────
 
 test.describe("club list", () => {
-  test("renders the clubs list with a New Club link", async ({ leagueAdminPage: page }) => {
+  test("renders the clubs list with a New Club link", async ({
+    leagueAdminPage: page,
+  }) => {
     await page.goto("/admin/clubs");
-    await expect(page.getByRole("heading", { name: "Clubs" })).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator(sel.newClubLink)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: "Clubs" })).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.locator(sel.newClubLink)).toBeVisible({
+      timeout: 15_000,
+    });
   });
 
-  test("archived clubs are hidden by default, shown when filter toggled", async ({ leagueAdminPage: page }) => {
-    await page.goto("/admin/clubs");
-    await expect(page.getByText("Include Archived")).toBeVisible();
+  test("archived clubs are hidden by default, shown when filter toggled", async ({
+    leagueAdminPage: page,
+  }) => {
+    const name = `Test Club (Archived) ${uid()}`;
+    const createRes = await page.request.post("/api/clubs", { data: { name } });
+    const {
+      club: { id },
+    } = await createRes.json();
+    await page.request.put(`/api/clubs/${id}`, {
+      data: { name, isArchived: true },
+    });
+
+    try {
+      await page.goto("/admin/clubs");
+      await expect(
+        page.getByText("Include Archived Clubs", { exact: true }),
+      ).toBeVisible({
+        timeout: 10_000,
+      });
+
+      // Club is hidden by default
+      await expect(page.getByText(name, { exact: true })).not.toBeVisible();
+
+      // Toggle "Include Archived Clubs"
+      await page.locator("#includeArchived").click();
+
+      // Search to narrow down to the archived club
+      await page.locator('input[placeholder="Search clubs..."]').fill(name);
+
+      // The club row should now be visible with an "Archived" status badge
+      const row = page.getByRole("row").filter({ hasText: name });
+      await expect(row).toBeVisible({ timeout: 10_000 });
+      await expect(row.getByText("Archived", { exact: true })).toBeVisible();
+    } finally {
+      await page.request.delete(`/api/clubs/${id}`);
+    }
   });
 });
 
 // ── Create ────────────────────────────────────────────────────────────────────
 
 test.describe("create club", () => {
-  test("valid required fields → redirects to list and club appears", async ({ leagueAdminPage: page }) => {
+  test("valid required fields → redirects to list and club appears", async ({
+    leagueAdminPage: page,
+  }) => {
     const name = `Test Club ${uid()}`;
     await page.goto("/admin/clubs/new", { timeout: 15_000 });
     await page.locator(sel.nameInput).fill(name);
@@ -43,31 +84,47 @@ test.describe("create club", () => {
     // Cleanup
     const res = await page.request.get("/api/clubs?includeArchived=true");
     const { clubs } = await res.json();
-    const created = clubs.find((c: { name: string; id: string }) => c.name === name);
+    const created = clubs.find(
+      (c: { name: string; id: string }) => c.name === name,
+    );
     if (created) await page.request.delete(`/api/clubs/${created.id}`);
   });
 
-  test("missing name → HTML5 validation prevents submission, stays on form", async ({ leagueAdminPage: page }) => {
+  test("missing name → HTML5 validation prevents submission, stays on form", async ({
+    leagueAdminPage: page,
+  }) => {
     await page.goto("/admin/clubs/new");
     await page.locator(sel.submitButton).click();
     await expect(page).toHaveURL(/\/admin\/clubs\/new/);
   });
 
-  test("logo upload → preview appears before submission", async ({ leagueAdminPage: page }) => {
+  test("logo upload → preview appears before submission", async ({
+    leagueAdminPage: page,
+  }) => {
     await page.goto("/admin/clubs/new");
 
-    const logoPath = path.resolve(__dirname, "../../fixtures/assets/test-logo.png");
+    const logoPath = path.resolve(
+      __dirname,
+      "../../fixtures/assets/test-logo.png",
+    );
     await page.locator(sel.logoInput).setInputFiles(logoPath);
 
-    await expect(page.locator('img[alt="Logo preview"]')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('img[alt="Logo preview"]')).toBeVisible({
+      timeout: 5_000,
+    });
   });
 
-  test("club created with logo → uploads to Storage and saves logoUrl", async ({ leagueAdminPage: page }) => {
+  test("club created with logo → uploads to Storage and saves logoUrl", async ({
+    leagueAdminPage: page,
+  }) => {
     const name = `Logo Club ${uid()}`;
     await page.goto("/admin/clubs/new");
     await page.locator(sel.nameInput).fill(name);
 
-    const logoPath = path.resolve(__dirname, "../../fixtures/assets/test-logo.png");
+    const logoPath = path.resolve(
+      __dirname,
+      "../../fixtures/assets/test-logo.png",
+    );
     await page.locator(sel.logoInput).setInputFiles(logoPath);
 
     await expect(page.locator('img[alt="Logo preview"]')).toBeVisible();
@@ -79,7 +136,9 @@ test.describe("create club", () => {
     // Verify the saved club has a logoUrl via the API
     const listRes = await page.request.get("/api/clubs");
     const { clubs } = await listRes.json();
-    const created = clubs.find((c: { name: string; id: string; logoUrl?: string }) => c.name === name);
+    const created = clubs.find(
+      (c: { name: string; id: string; logoUrl?: string }) => c.name === name,
+    );
     expect(created?.logoUrl).toBeTruthy();
 
     if (created) await page.request.delete(`/api/clubs/${created.id}`);
@@ -89,13 +148,17 @@ test.describe("create club", () => {
 // ── Edit ──────────────────────────────────────────────────────────────────────
 
 test.describe("edit club", () => {
-  test("save changes → updated name appears in list", async ({ leagueAdminPage: page }) => {
+  test("save changes → updated name appears in list", async ({
+    leagueAdminPage: page,
+  }) => {
     const original = `Club ${uid()}`;
     const updated = `${original} (edited)`;
     const res = await page.request.post("/api/clubs", {
       data: { name: original },
     });
-    const { club: { id } } = await res.json();
+    const {
+      club: { id },
+    } = await res.json();
 
     try {
       await page.goto(`/admin/clubs/${id}`);
@@ -109,12 +172,16 @@ test.describe("edit club", () => {
     }
   });
 
-  test("archiving a club sets it inactive and hides it from default list", async ({ leagueAdminPage: page }) => {
+  test("archiving a club sets it inactive and hides it from default list", async ({
+    leagueAdminPage: page,
+  }) => {
     const name = `Club ${uid()}`;
     const res = await page.request.post("/api/clubs", {
       data: { name },
     });
-    const { club: { id } } = await res.json();
+    const {
+      club: { id },
+    } = await res.json();
 
     try {
       await page.goto(`/admin/clubs/${id}`);
@@ -132,16 +199,19 @@ test.describe("edit club", () => {
 // ── Delete ────────────────────────────────────────────────────────────────────
 
 test.describe("delete club", () => {
-  test("confirm delete → club removed from list", async ({ leagueAdminPage: page }) => {
+  test("confirm delete → club removed from list", async ({
+    leagueAdminPage: page,
+  }) => {
     const name = `Club ${uid()}`;
-    const res = await page.request.post("/api/clubs", { data: { name } });
-    const { club: { id } } = await res.json();
+    await page.request.post("/api/clubs", { data: { name } });
 
-    await page.goto(`/admin/clubs/${id}`);
-    await page.locator(sel.deleteButton).click();
+    await page.goto("/admin/clubs");
+
+    const row = page.getByRole("row").filter({ hasText: name });
+    await expect(row).toBeVisible({ timeout: 10_000 });
+    await row.locator(sel.deleteButton).click();
     await page.locator(sel.confirmDeleteButton).click();
 
-    await expect(page).toHaveURL("/admin/clubs", { timeout: 10_000 });
-    await expect(page.getByText(name, { exact: true })).not.toBeVisible();
+    await expect(row).not.toBeVisible({ timeout: 10_000 });
   });
 });

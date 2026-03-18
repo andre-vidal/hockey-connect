@@ -124,16 +124,15 @@ test.describe("edit tournament", () => {
 test.describe("delete tournament", () => {
   test("confirm delete → tournament removed from list", async ({ leagueAdminPage: page }) => {
     const name = `Tournament ${uid()}`;
-    const res = await page.request.post("/api/tournaments", {
+    await page.request.post("/api/tournaments", {
       data: { name, venue: "Venue", startDate: "2026-06-01", endDate: "2026-06-10" },
     });
-    const { tournament: { id } } = await res.json();
 
-    await page.goto(`/admin/tournaments/${id}`);
-    await page.locator(sel.deleteButton).click();
+    await page.goto("/admin/tournaments");
+    const row = page.getByRole("row").filter({ hasText: name });
+    await row.locator(sel.deleteButton).click();
     await page.locator(sel.confirmDeleteButton).click();
 
-    await expect(page).toHaveURL("/admin/tournaments", { timeout: 10_000 });
-    await expect(page.getByText(name, { exact: true })).not.toBeVisible();
+    await expect(row).not.toBeVisible({ timeout: 10_000 });
   });
 });

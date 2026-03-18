@@ -48,20 +48,24 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const inviteUrl = `${baseUrl}/register?invite=true&clubId=${clubId ?? ""}&email=${encodeURIComponent(email)}`;
 
-    await sendEmail({
-      to: email,
-      subject: "You've been invited to Hockey Connect",
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Welcome to Hockey Connect</h2>
-          <p>Hi ${displayName},</p>
-          <p>You've been invited to join Hockey Connect as a Club Admin.</p>
-          <p>Click the link below to complete your registration:</p>
-          <a href="${inviteUrl}" style="display: inline-block; padding: 12px 24px; background: #16a34a; color: white; text-decoration: none; border-radius: 6px;">Accept Invitation</a>
-          <p style="margin-top: 24px; color: #6b7280; font-size: 14px;">If you didn't expect this invitation, you can safely ignore this email.</p>
-        </div>
-      `,
-    });
+    try {
+      await sendEmail({
+        to: email,
+        subject: "You've been invited to Hockey Connect",
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Welcome to Hockey Connect</h2>
+            <p>Hi ${displayName},</p>
+            <p>You've been invited to join Hockey Connect as a Club Admin.</p>
+            <p>Click the link below to complete your registration:</p>
+            <a href="${inviteUrl}" style="display: inline-block; padding: 12px 24px; background: #16a34a; color: white; text-decoration: none; border-radius: 6px;">Accept Invitation</a>
+            <p style="margin-top: 24px; color: #6b7280; font-size: 14px;">If you didn't expect this invitation, you can safely ignore this email.</p>
+          </div>
+        `,
+      });
+    } catch (emailError) {
+      console.error("Failed to send invite email:", emailError instanceof Error ? emailError.message : emailError);
+    }
 
     return NextResponse.json({ user: userDoc }, { status: 201 });
   } catch (error) {

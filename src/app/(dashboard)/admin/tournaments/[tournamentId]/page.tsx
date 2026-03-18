@@ -12,10 +12,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter } from "@/components/ui/modal";
 import { useToast } from "@/hooks/useToast";
 import { League, Tournament, TournamentStatus } from "@/types";
-import { Trash2 } from "lucide-react";
 
 interface FormState {
   name: string;
@@ -38,8 +36,6 @@ export default function EditTournamentPage() {
   const [form, setForm] = useState<FormState | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [leagues, setLeagues] = useState<League[]>([]);
 
   useEffect(() => {
@@ -92,22 +88,6 @@ export default function EditTournamentPage() {
     }
   }
 
-  async function handleDelete() {
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/tournaments/${tournamentId}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to delete tournament");
-      toast({ title: "Tournament deleted", description: "The tournament has been removed." });
-      router.push("/admin/tournaments");
-    } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to delete", variant: "destructive" });
-    } finally {
-      setDeleting(false);
-      setShowDeleteModal(false);
-    }
-  }
-
   if (loading) {
     return (
       <AuthGuard requiredRoles={["league_admin"]}>
@@ -135,12 +115,6 @@ export default function EditTournamentPage() {
       <DashboardShell
         title="Edit Tournament"
         description="Update tournament details and configuration."
-        actions={
-          <Button variant="destructive" onClick={() => setShowDeleteModal(true)}>
-            <Trash2 className="h-4 w-4 mr-1" />
-            Delete
-          </Button>
-        }
       >
         <form onSubmit={handleSubmit} className="max-w-2xl space-y-8">
           <section className="space-y-4">
@@ -238,22 +212,6 @@ export default function EditTournamentPage() {
           </div>
         </form>
 
-        <Modal open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-          <ModalContent>
-            <ModalHeader>
-              <ModalTitle>Delete Tournament</ModalTitle>
-            </ModalHeader>
-            <p className="text-sm text-gray-600 mt-2">
-              Are you sure you want to delete <strong>{form.name}</strong>? This action cannot be undone.
-            </p>
-            <ModalFooter>
-              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-                {deleting ? "Deleting..." : "Delete Tournament"}
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
       </DashboardShell>
     </AuthGuard>
   );

@@ -10,14 +10,19 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter } from "@/components/ui/modal";
+import { useToast } from "@/hooks/useToast";
 import { Club } from "@/types";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 export default function ClubsPage() {
   const [clubs, setClubs] = useState<Club[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [includeArchived, setIncludeArchived] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Club | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     setLoading(true);
@@ -31,6 +36,23 @@ export default function ClubsPage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [includeArchived]);
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/clubs/${deleteTarget.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to delete club");
+      setClubs((prev) => prev.filter((c) => c.id !== deleteTarget.id));
+      toast({ title: "Club deleted", description: `${deleteTarget.name} has been removed.` });
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to delete", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  }
 
   const columns: Column<Club & Record<string, unknown>>[] = [
     {
@@ -67,30 +89,34 @@ export default function ClubsPage() {
     },
     {
       key: "isActive",
-      header: "Active",
+      header: "Status",
       cell: (row) => (
-        <Badge variant={row.isActive ? "success" : "secondary"}>
-          {row.isActive ? "Active" : "Inactive"}
-        </Badge>
-      ),
-    },
-    {
-      key: "isArchived",
-      header: "Archived",
-      cell: (row) => (
-        row.isArchived ? <Badge variant="outline">Archived</Badge> : null
+        <div className="flex gap-1 flex-wrap">
+          {row.isActive && <Badge variant="success">Active</Badge>}
+          {row.isArchived && <Badge variant="outline">Archived</Badge>}
+        </div>
       ),
     },
     {
       key: "actions",
       header: "Actions",
       cell: (row) => (
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/admin/clubs/${row.id}`}>
-            <Pencil className="h-3 w-3 mr-1" />
-            Edit
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/admin/clubs/${row.id}`}>
+              <Pencil className="h-3 w-3 mr-1" />
+              Edit
+            </Link>
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setDeleteTarget(row as unknown as Club)}
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+            Delete
+          </Button>
+        </div>
       ),
     },
   ];
@@ -131,6 +157,23 @@ export default function ClubsPage() {
           emptyMessage="No clubs found. Create your first club to get started."
         />
       </DashboardShell>
+
+      <Modal open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Delete Club</ModalTitle>
+          </ModalHeader>
+          <p className="text-sm text-gray-600 mt-2">
+            Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone.
+          </p>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Deleting..." : "Delete Club"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </AuthGuard>
   );
 }

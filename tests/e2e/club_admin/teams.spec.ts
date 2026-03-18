@@ -54,13 +54,14 @@ test.describe("create team", () => {
     if (created) await page.request.delete(`/api/clubs/${clubId()}/teams/${created.id}`);
   });
 
-  test("missing name → submit button is disabled", async ({ clubAdminPage: page }) => {
+  test("missing name → shows validation error on submit", async ({ clubAdminPage: page }) => {
     await page.goto("/club/teams/new");
 
     await page.locator(sel.genderTrigger).click();
     await page.getByRole("option", { name: "Male", exact: true }).click();
 
-    await expect(page.locator(sel.submitButton)).toBeDisabled();
+    await page.locator(sel.submitButton).click();
+    await expect(page.getByText("Validation Error")).toBeVisible();
   });
 
   test("optional fields saved correctly", async ({ clubAdminPage: page }) => {
@@ -117,16 +118,15 @@ test.describe("delete team", () => {
   test("confirm delete → team removed from list", async ({ clubAdminPage: page }) => {
     const name = `Team ${uid()}`;
 
-    const res = await page.request.post(`/api/clubs/${clubId()}/teams`, {
+    await page.request.post(`/api/clubs/${clubId()}/teams`, {
       data: { name, gender: "male" },
     });
-    const { team: { id } } = await res.json();
 
-    await page.goto(`/club/teams/${id}`);
-    page.once("dialog", (dialog) => dialog.accept());
+    await page.goto("/club/teams");
+    const row = page.getByRole("row").filter({ hasText: name });
+    await row.locator(sel.deleteButton).click();
     await page.locator(sel.confirmDeleteButton).click();
 
-    await expect(page).toHaveURL("/club/teams", { timeout: 10_000 });
-    await expect(page.getByText(name, { exact: true })).not.toBeVisible();
+    await expect(row).not.toBeVisible({ timeout: 10_000 });
   });
 });

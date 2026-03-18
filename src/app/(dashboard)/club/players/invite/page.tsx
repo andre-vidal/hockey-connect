@@ -26,6 +26,10 @@ export default function InviteClubPlayerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.firstName || !form.lastName || !form.email) {
+      toast({ title: "Validation Error", description: "First name, last name, and email are required.", variant: "destructive" });
+      return;
+    }
     if (!profile?.clubId) return;
     setSaving(true);
     try {
@@ -105,7 +109,7 @@ export default function InviteClubPlayerPage() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" disabled={saving || !form.firstName || !form.lastName || !form.email}>
+                <Button type="submit" disabled={saving}>
                   {saving ? "Sending..." : "Send Invitation"}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>

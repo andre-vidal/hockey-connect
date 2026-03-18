@@ -11,10 +11,12 @@ export async function sendEmail({
   subject: string;
   html: string;
 }) {
-  return resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from: process.env.RESEND_FROM_EMAIL || "noreply@hockeyconnect.app",
     to,
     subject,
     html,
   });
+  if (error) throw new Error(`Resend error: ${error.message}`);
+  return data;
 }

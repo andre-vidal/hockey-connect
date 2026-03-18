@@ -55,7 +55,7 @@ test.describe("create squad", () => {
     ).toBeVisible();
   });
 
-  test("submit without selecting a team → submit button is disabled", async ({
+  test("submit without selecting a team → shows validation error", async ({
     clubAdminPage: page,
   }) => {
     const leagueId = process.env.CLUB_ADMIN_OPEN_LEAGUE_ID;
@@ -71,7 +71,8 @@ test.describe("create squad", () => {
     await page.locator(sel.leagueTrigger).click();
     await page.getByRole("option").first().click();
 
-    await expect(page.locator(sel.submitButton)).toBeDisabled();
+    await page.locator(sel.submitButton).click();
+    await expect(page.getByText("Validation Error")).toBeVisible();
   });
 
   test("valid squad → redirects to list and appears as draft", async ({
@@ -100,7 +101,7 @@ test.describe("create squad", () => {
         .click();
       await page.locator(sel.leagueTrigger).click();
       await page
-        .getByRole("option", { name: "Test League", exact: true })
+        .getByRole("option", { name: "Demo League (Open)", exact: true })
         .click();
 
       await page.locator(sel.seasonInput).fill("2025/2026");

@@ -66,18 +66,20 @@ test.describe("create player", () => {
     if (created) await page.request.delete(`/api/clubs/${clubId()}/players/${created.id}`);
   });
 
-  test("missing first name → submit button is disabled", async ({ clubAdminPage: page }) => {
+  test("missing first name → shows validation error on submit", async ({ clubAdminPage: page }) => {
     await page.goto("/club/players/new");
     await page.locator(sel.lastNameInput).fill("Player");
 
-    await expect(page.locator(sel.submitButton)).toBeDisabled();
+    await page.locator(sel.submitButton).click();
+    await expect(page.getByText("Validation Error")).toBeVisible();
   });
 
-  test("missing last name → submit button is disabled", async ({ clubAdminPage: page }) => {
+  test("missing last name → shows validation error on submit", async ({ clubAdminPage: page }) => {
     await page.goto("/club/players/new");
     await page.locator(sel.firstNameInput).fill(`Test${uid()}`);
 
-    await expect(page.locator(sel.submitButton)).toBeDisabled();
+    await page.locator(sel.submitButton).click();
+    await expect(page.getByText("Validation Error")).toBeVisible();
   });
 
   test("player with email → email saved via API", async ({ clubAdminPage: page }) => {
@@ -162,40 +164,34 @@ test.describe("remove player", () => {
   test("confirm remove → player removed from list", async ({ clubAdminPage: page }) => {
     const firstName = `Remove${uid()}`;
 
-    const res = await page.request.post(`/api/clubs/${clubId()}/players`, {
+    await page.request.post(`/api/clubs/${clubId()}/players`, {
       data: { firstName, lastName: "Player" },
     });
-    const { player: { id } } = await res.json();
 
-    await page.goto(`/club/players/${id}`);
+    await page.goto("/club/players");
+    const row = page.getByRole("row").filter({ hasText: firstName });
+    await row.locator(sel.removeButton).click();
+    await page.locator(sel.confirmRemoveButton).click();
 
-    // The Remove button triggers window.confirm() — accept it via the dialog event
-    page.once("dialog", (dialog) => dialog.accept());
-    await page.locator(sel.removeButton).click();
-
-    await expect(page).toHaveURL("/club/players", { timeout: 10_000 });
-    await expect(page.getByText(`${firstName} Player`, { exact: true })).not.toBeVisible();
+    await expect(row).not.toBeVisible({ timeout: 10_000 });
   });
 });
 
 // ── Invite player ─────────────────────────────────────────────────────────────
 
 test.describe("invite player", () => {
-  test("submit button is disabled until all required fields are filled", async ({ clubAdminPage: page }) => {
+  test("submitting with missing required fields → shows validation error", async ({ clubAdminPage: page }) => {
     await page.goto("/club/players/invite");
 
-    // Nothing filled — button disabled
-    await expect(page.locator(sel.inviteSubmitButton)).toBeDisabled();
+    // Nothing filled — submit shows validation error
+    await page.locator(sel.inviteSubmitButton).click();
+    await expect(page.getByText("Validation Error")).toBeVisible();
 
+    // First name + last name filled but email missing — still shows error
     await page.locator("#firstName").fill("Jane");
-    await expect(page.locator(sel.inviteSubmitButton)).toBeDisabled();
-
     await page.locator("#lastName").fill("Doe");
-    await expect(page.locator(sel.inviteSubmitButton)).toBeDisabled();
-
-    // All three required fields filled — button enabled
-    await page.locator("#email").fill("jane.doe@example.com");
-    await expect(page.locator(sel.inviteSubmitButton)).toBeEnabled();
+    await page.locator(sel.inviteSubmitButton).click();
+    await expect(page.getByText("Validation Error")).toBeVisible();
   });
 
   test("valid invite → success toast and redirects to players list", async ({ clubAdminPage: page }) => {

@@ -7,15 +7,20 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter } from "@/components/ui/modal";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/useToast";
 import { Team } from "@/types";
-import { Plus, Pencil } from "lucide-react";
+import { Plus, Pencil, Trash2 } from "lucide-react";
 
 export default function ClubTeamsPage() {
   const { profile } = useAuth();
+  const { toast } = useToast();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Team | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!profile?.clubId) return;
@@ -29,6 +34,23 @@ export default function ClubTeamsPage() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [profile?.clubId]);
+
+  async function handleDelete() {
+    if (!deleteTarget || !profile?.clubId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/clubs/${profile.clubId}/teams/${deleteTarget.id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to delete team");
+      setTeams((prev) => prev.filter((t) => t.id !== deleteTarget.id));
+      toast({ title: "Team deleted", description: `${deleteTarget.name} has been removed.` });
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to delete", variant: "destructive" });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
+  }
 
   const columns: Column<Team & Record<string, unknown>>[] = [
     {
@@ -50,12 +72,22 @@ export default function ClubTeamsPage() {
       key: "actions",
       header: "Actions",
       cell: (row) => (
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/club/teams/${row.id}`}>
-            <Pencil className="h-3 w-3 mr-1" />
-            Edit
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/club/teams/${row.id}`}>
+              <Pencil className="h-3 w-3 mr-1" />
+              Edit
+            </Link>
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setDeleteTarget(row as unknown as Team)}
+          >
+            <Trash2 className="h-3 w-3 mr-1" />
+            Delete
+          </Button>
+        </div>
       ),
     },
   ];
@@ -91,6 +123,23 @@ export default function ClubTeamsPage() {
           emptyMessage="No teams found. Create your first team to get started."
         />
       </DashboardShell>
+
+      <Modal open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <ModalContent>
+          <ModalHeader>
+            <ModalTitle>Delete Team</ModalTitle>
+          </ModalHeader>
+          <p className="text-sm text-gray-600 mt-2">
+            Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone.
+          </p>
+          <ModalFooter>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? "Deleting..." : "Delete Team"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </AuthGuard>
   );
 }

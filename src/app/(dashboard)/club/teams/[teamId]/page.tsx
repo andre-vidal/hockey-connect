@@ -24,7 +24,6 @@ export default function EditClubTeamPage() {
   const [form, setForm] = useState({ name: "", gender: "", ageGroup: "", division: "", teamAdminId: "" });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!profile?.clubId) return;
@@ -73,20 +72,6 @@ export default function EditClubTeamPage() {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to update", variant: "destructive" });
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!profile?.clubId || !confirm("Delete this team? This cannot be undone.")) return;
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/clubs/${profile.clubId}/teams/${teamId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast({ title: "Team deleted" });
-      router.push("/club/teams");
-    } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to delete", variant: "destructive" });
-      setDeleting(false);
     }
   };
 
@@ -152,14 +137,9 @@ export default function EditClubTeamPage() {
                 </Select>
               </div>
 
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
-                  <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-                </div>
-                <Button type="button" variant="destructive" onClick={handleDelete} disabled={deleting}>
-                  {deleting ? "Deleting..." : "Delete Team"}
-                </Button>
+              <div className="flex gap-2 pt-2">
+                <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+                <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
               </div>
             </form>
           </CardContent>

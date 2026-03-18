@@ -10,11 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter } from "@/components/ui/modal";
 import { useToast } from "@/hooks/useToast";
 import { MatchOfficial, OfficialType } from "@/types";
 import { cn } from "@/lib/utils";
-import { Trash2 } from "lucide-react";
 
 const OFFICIAL_TYPES: { value: OfficialType; label: string }[] = [
   { value: "umpire", label: "Umpire" },
@@ -41,8 +39,6 @@ export default function EditOfficialPage() {
   const [form, setForm] = useState<FormState | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     fetch(`/api/officials/${officialId}`)
@@ -101,22 +97,6 @@ export default function EditOfficialPage() {
     }
   }
 
-  async function handleDelete() {
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/officials/${officialId}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to delete official");
-      toast({ title: "Official removed", description: "The official record has been deleted." });
-      router.push("/admin/officials");
-    } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to delete", variant: "destructive" });
-    } finally {
-      setDeleting(false);
-      setShowDeleteModal(false);
-    }
-  }
-
   if (loading) {
     return (
       <AuthGuard requiredRoles={["league_admin"]}>
@@ -144,12 +124,6 @@ export default function EditOfficialPage() {
       <DashboardShell
         title="Edit Official"
         description="Update official registration details."
-        actions={
-          <Button variant="destructive" onClick={() => setShowDeleteModal(true)}>
-            <Trash2 className="h-4 w-4 mr-1" />
-            Delete
-          </Button>
-        }
       >
         <form onSubmit={handleSubmit} className="max-w-2xl space-y-8">
           <section className="space-y-4">
@@ -236,22 +210,6 @@ export default function EditOfficialPage() {
           </div>
         </form>
 
-        <Modal open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-          <ModalContent>
-            <ModalHeader>
-              <ModalTitle>Remove Official</ModalTitle>
-            </ModalHeader>
-            <p className="text-sm text-gray-600 mt-2">
-              Are you sure you want to remove <strong>{form.displayName}</strong> as an official? This cannot be undone.
-            </p>
-            <ModalFooter>
-              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-                {deleting ? "Removing..." : "Remove Official"}
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
       </DashboardShell>
     </AuthGuard>
   );

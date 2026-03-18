@@ -82,18 +82,6 @@ export default function EditClubPlayerPage() {
     }
   };
 
-  const handleDelete = async () => {
-    if (!profile?.clubId || !confirm("Remove this player from the roster? This cannot be undone.")) return;
-    try {
-      const res = await fetch(`/api/clubs/${profile.clubId}/players/${playerId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error((await res.json()).error);
-      toast({ title: "Player removed" });
-      router.push("/club/players");
-    } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to delete", variant: "destructive" });
-    }
-  };
-
   if (loading) {
     return (
       <AuthGuard requiredRoles={["club_admin"]}>
@@ -198,12 +186,9 @@ export default function EditClubPlayerPage() {
                 </Select>
               </div>
 
-              <div className="flex items-center justify-between pt-2">
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
-                  <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-                </div>
-                <Button type="button" variant="destructive" onClick={handleDelete}>Remove</Button>
+              <div className="flex gap-2 pt-2">
+                <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save Changes"}</Button>
+                <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
               </div>
             </form>
           </CardContent>

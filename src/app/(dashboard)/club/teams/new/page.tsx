@@ -22,6 +22,10 @@ export default function NewClubTeamPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.name || !form.gender) {
+      toast({ title: "Validation Error", description: "Team name and gender are required.", variant: "destructive" });
+      return;
+    }
     if (!profile?.clubId) return;
     setSaving(true);
     try {
@@ -96,7 +100,7 @@ export default function NewClubTeamPage() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" disabled={saving || !form.name || !form.gender}>
+                <Button type="submit" disabled={saving}>
                   {saving ? "Creating..." : "Create Team"}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => router.back()}>

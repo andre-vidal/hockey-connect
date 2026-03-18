@@ -71,6 +71,21 @@ test.describe("invite club admin", () => {
     await expect(page.getByRole("dialog")).toBeVisible();
   });
 
+  test("submit without club → shows validation error, stays in modal", async ({
+    leagueAdminPage: page,
+  }) => {
+    await page.goto("/admin/users");
+    await page.locator(sel.inviteButton).click();
+
+    // Fill email and name but leave club unselected
+    await page.locator(sel.inviteEmailInput).fill(`test.${uid()}@example.com`);
+    await page.locator(sel.inviteNameInput).fill("No Club User");
+    await page.locator(sel.sendInviteButton).click();
+
+    await expect(page.getByText("Validation Error")).toBeVisible();
+    await expect(page.getByRole("dialog")).toBeVisible();
+  });
+
   test("valid invite → success toast shown and user appears in list", async ({
     leagueAdminPage: page,
   }) => {
@@ -82,6 +97,8 @@ test.describe("invite club admin", () => {
 
     await page.locator(sel.inviteEmailInput).fill(inviteEmail);
     await page.locator(sel.inviteNameInput).fill(inviteName);
+    await page.locator(sel.inviteClubTrigger).click();
+    await page.getByRole("option").first().click();
     await page.locator(sel.sendInviteButton).click();
 
     // Success toast

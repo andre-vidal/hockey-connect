@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter } from "@/components/ui/modal";
 import { useToast } from "@/hooks/useToast";
 import { League, Gender, LeagueStatus } from "@/types";
-import { Trash2, CalendarPlus } from "lucide-react";
+import { CalendarPlus } from "lucide-react";
 
 interface FormState {
   name: string;
@@ -40,8 +40,6 @@ export default function EditLeaguePage() {
   const [form, setForm] = useState<FormState | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showSeasonModal, setShowSeasonModal] = useState(false);
   const [newSeason, setNewSeason] = useState({ currentSeason: "", startDate: "", endDate: "" });
   const [creatingseason, setCreatingSeason] = useState(false);
@@ -92,22 +90,6 @@ export default function EditLeaguePage() {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to update", variant: "destructive" });
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleDelete() {
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/leagues/${leagueId}`, { method: "DELETE" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Failed to delete league");
-      toast({ title: "League deleted", description: "The league has been removed." });
-      router.push("/admin/leagues");
-    } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to delete", variant: "destructive" });
-    } finally {
-      setDeleting(false);
-      setShowDeleteModal(false);
     }
   }
 
@@ -164,16 +146,10 @@ export default function EditLeaguePage() {
         title="Edit League"
         description="Update league settings and configuration."
         actions={
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowSeasonModal(true)}>
-              <CalendarPlus className="h-4 w-4 mr-1" />
-              New Season
-            </Button>
-            <Button variant="destructive" onClick={() => setShowDeleteModal(true)}>
-              <Trash2 className="h-4 w-4 mr-1" />
-              Delete
-            </Button>
-          </div>
+          <Button variant="outline" onClick={() => setShowSeasonModal(true)}>
+            <CalendarPlus className="h-4 w-4 mr-1" />
+            New Season
+          </Button>
         }
       >
         <form onSubmit={handleSubmit} className="max-w-2xl space-y-8">
@@ -312,24 +288,6 @@ export default function EditLeaguePage() {
             <Button type="button" variant="outline" asChild><Link href="/admin/leagues">Cancel</Link></Button>
           </div>
         </form>
-
-        {/* Delete Confirmation Modal */}
-        <Modal open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-          <ModalContent>
-            <ModalHeader>
-              <ModalTitle>Delete League</ModalTitle>
-            </ModalHeader>
-            <p className="text-sm text-gray-600 mt-2">
-              Are you sure you want to delete <strong>{form.name}</strong>? This action cannot be undone.
-            </p>
-            <ModalFooter>
-              <Button variant="outline" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
-              <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-                {deleting ? "Deleting..." : "Delete League"}
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
 
         {/* New Season Modal */}
         <Modal open={showSeasonModal} onOpenChange={setShowSeasonModal}>

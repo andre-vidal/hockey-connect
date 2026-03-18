@@ -103,6 +103,8 @@ export const adminUsers = {
   /** Inside the invite modal */
   inviteEmailInput: "#inviteEmail",
   inviteNameInput: "#inviteName",
+  /** Radix Select trigger for club assignment in the invite modal */
+  inviteClubTrigger: "#inviteClub",
   sendInviteButton: 'button:has-text("Send Invitation")',
 } as const;
 
@@ -137,11 +139,26 @@ export const clubPlayers = {
   /** Submit button on the invite player form */
   inviteSubmitButton: 'button:has-text("Send Invitation")',
   saveButton: 'button:has-text("Save Changes")',
-  /** Destructive button on the edit page — triggers window.confirm() */
+  /** Destructive button in the Actions column of each row */
   removeButton: 'button:has-text("Remove")',
+  /** Inside the remove confirmation modal */
+  confirmRemoveButton: 'button:has-text("Remove Player")',
 } as const;
 
 export const clubSquads = {
+  newSquadLink: 'a:has-text("New Squad")',
+  /** Radix Select trigger for team */
+  teamTrigger: "#teamId",
+  /** Radix Select trigger for league (shown when League type selected) */
+  leagueTrigger: "#leagueId",
+  seasonInput: "#season",
+  submitButton: 'button:has-text("Create Squad")',
+  submitForApprovalButton: 'button:has-text("Submit for Approval")',
+} as const;
+
+// ── Team admin selectors ──────────────────────────────────────────────────────
+
+export const teamSquads = {
   newSquadLink: 'a:has-text("New Squad")',
   /** Radix Select trigger for team */
   teamTrigger: "#teamId",

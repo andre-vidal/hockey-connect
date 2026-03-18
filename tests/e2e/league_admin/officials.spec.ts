@@ -142,7 +142,7 @@ test.describe("delete official", () => {
     const adminUser = users.find((u: { email: string; uid: string }) => u.email === adminEmail);
     if (!adminUser) test.skip(true, "LEAGUE_ADMIN_EMAIL user not found in /api/users");
 
-    const res = await page.request.post("/api/officials", {
+    await page.request.post("/api/officials", {
       data: {
         userId: adminUser.uid,
         displayName: adminUser.displayName ?? "Admin",
@@ -150,12 +150,12 @@ test.describe("delete official", () => {
         officialTypes: ["table_operator"],
       },
     });
-    const { official: { id } } = await res.json();
 
-    await page.goto(`/admin/officials/${id}`);
-    await page.locator(sel.deleteButton).click();
+    await page.goto("/admin/officials");
+    const row = page.getByRole("row").filter({ hasText: adminEmail! });
+    await row.locator(sel.deleteButton).click();
     await page.locator(sel.confirmDeleteButton).click();
 
-    await expect(page).toHaveURL("/admin/officials", { timeout: 10_000 });
+    await expect(row).not.toBeVisible({ timeout: 10_000 });
   });
 });

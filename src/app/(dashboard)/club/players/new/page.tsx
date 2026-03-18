@@ -28,6 +28,10 @@ export default function NewClubPlayerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.firstName || !form.lastName) {
+      toast({ title: "Validation Error", description: "First name and last name are required.", variant: "destructive" });
+      return;
+    }
     if (!profile?.clubId) return;
     setSaving(true);
     try {
@@ -126,7 +130,7 @@ export default function NewClubPlayerPage() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <Button type="submit" disabled={saving || !form.firstName || !form.lastName}>
+                <Button type="submit" disabled={saving}>
                   {saving ? "Saving..." : "Add Player"}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
