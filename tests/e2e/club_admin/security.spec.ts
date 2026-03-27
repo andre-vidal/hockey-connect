@@ -113,6 +113,34 @@ test.describe("club admin cannot access another club's data", () => {
   });
 });
 
+// ── Match API security ────────────────────────────────────────────────────────
+
+test.describe("club admin cannot mutate matches", () => {
+  test("POST /api/matches → 403", async ({ clubAdminPage: page }) => {
+    const res = await page.request.post("/api/matches", {
+      data: { leagueId: "x", homeTeamId: "a", awayTeamId: "b", venue: "v", scheduledAt: "2026-01-01T10:00:00Z" },
+    });
+    expect(res.status()).toBe(403);
+  });
+
+  test("PATCH /api/matches/:id → 403", async ({ clubAdminPage: page }) => {
+    const res = await page.request.patch("/api/matches/nonexistent-id", {
+      data: { venue: "Hacked" },
+    });
+    expect(res.status()).toBe(403);
+  });
+
+  test("DELETE /api/matches/:id → 403", async ({ clubAdminPage: page }) => {
+    const res = await page.request.delete("/api/matches/nonexistent-id");
+    expect(res.status()).toBe(403);
+  });
+
+  test("GET /api/matches → 200 (club admin can read matches)", async ({ clubAdminPage: page }) => {
+    const res = await page.request.get("/api/matches");
+    expect(res.status()).toBe(200);
+  });
+});
+
 // ── Own club data is accessible ───────────────────────────────────────────────
 
 test.describe("club admin can access their own club's data", () => {

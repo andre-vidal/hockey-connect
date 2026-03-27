@@ -1,4 +1,4 @@
-import { test as base, expect, Page } from "@playwright/test";
+import { test as base, expect, Page, Browser } from "@playwright/test";
 
 /**
  * Authenticates a user without touching the UI by:
@@ -49,19 +49,34 @@ async function createSession(page: Page, email: string, password: string): Promi
  * AND the httpOnly session cookie are established. The REST-API-only approach
  * (createSession) is sufficient for middleware/API tests but not for dashboard
  * pages that use AuthGuard, which reads roles from AuthProvider client-side.
+ *
+ * Waits for navigation away from /login (redirect destination varies by role),
+ * so no specific redirect URL needs to be hard-coded.
  */
 async function createUiSession(
   page: Page,
   email: string,
-  password: string,
-  redirectUrl: string
+  password: string
 ): Promise<void> {
   await page.goto("/login");
-  await page.waitForURL("/login", { timeout: 15_000 });
+  await page.waitForURL((url) => url.pathname === "/login", { timeout: 15_000 });
   await page.locator("#email").fill(email);
   await page.locator("#password").fill(password);
   await page.locator('button[type="submit"]').click();
-  await page.waitForURL(redirectUrl, { timeout: 15_000 });
+  // Wait for navigation away from /login — destination varies by role
+  await page.waitForURL((url) => url.pathname !== "/login", { timeout: 15_000 });
+}
+
+/**
+ * Creates an isolated BrowserContext from a `browser` fixture and returns a
+ * fresh Page within it. This ensures each role fixture has its own cookie jar,
+ * which prevents session contamination when multiple fixtures are used in the
+ * same test (e.g. leagueAdminPage + matchOfficialPage).
+ */
+async function createIsolatedPage(browser: Browser): Promise<{ page: Page; cleanup: () => Promise<void> }> {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  return { page, cleanup: () => context.close() };
 }
 
 /**
@@ -87,6 +102,8 @@ export const test = base.extend<{
   /** A page signed in as TEAM_ADMIN_EMAIL (team_admin role) */
   teamAdminPage: Page;
 }>({
+  // authenticatedPage uses the shared page fixture — it only makes API calls
+  // via page.request, so it doesn't need an isolated context.
   authenticatedPage: async ({ page }, use) => {
     const email = process.env.TEST_USER_EMAIL;
     const password = process.env.TEST_USER_PASSWORD;
@@ -97,44 +114,54 @@ export const test = base.extend<{
     await use(page);
   },
 
-  leagueAdminPage: async ({ page }, use) => {
+  // Role fixtures each create their own BrowserContext so that multiple
+  // role fixtures can coexist in a single test without session contamination.
+  leagueAdminPage: async ({ browser }, use) => {
     const email = process.env.LEAGUE_ADMIN_EMAIL;
     const password = process.env.LEAGUE_ADMIN_PASSWORD;
     if (!email || !password) {
       throw new Error("LEAGUE_ADMIN_EMAIL and LEAGUE_ADMIN_PASSWORD must be set in .env.test");
     }
-    await createUiSession(page, email, password, "/admin");
+    const { page, cleanup } = await createIsolatedPage(browser);
+    await createUiSession(page, email, password);
     await use(page);
+    await cleanup();
   },
 
-  clubAdminPage: async ({ page }, use) => {
+  clubAdminPage: async ({ browser }, use) => {
     const email = process.env.CLUB_ADMIN_EMAIL;
     const password = process.env.CLUB_ADMIN_PASSWORD;
     if (!email || !password) {
       throw new Error("CLUB_ADMIN_EMAIL and CLUB_ADMIN_PASSWORD must be set in .env.test");
     }
-    await createUiSession(page, email, password, "/club");
+    const { page, cleanup } = await createIsolatedPage(browser);
+    await createUiSession(page, email, password);
     await use(page);
+    await cleanup();
   },
 
-  matchOfficialPage: async ({ page }, use) => {
+  matchOfficialPage: async ({ browser }, use) => {
     const email = process.env.MATCH_OFFICIAL_EMAIL;
     const password = process.env.MATCH_OFFICIAL_PASSWORD;
     if (!email || !password) {
       throw new Error("MATCH_OFFICIAL_EMAIL and MATCH_OFFICIAL_PASSWORD must be set in .env.test");
     }
-    await createUiSession(page, email, password, "/official");
+    const { page, cleanup } = await createIsolatedPage(browser);
+    await createUiSession(page, email, password);
     await use(page);
+    await cleanup();
   },
 
-  teamAdminPage: async ({ page }, use) => {
+  teamAdminPage: async ({ browser }, use) => {
     const email = process.env.TEAM_ADMIN_EMAIL;
     const password = process.env.TEAM_ADMIN_PASSWORD;
     if (!email || !password) {
       throw new Error("TEAM_ADMIN_EMAIL and TEAM_ADMIN_PASSWORD must be set in .env.test");
     }
-    await createUiSession(page, email, password, "/team");
+    const { page, cleanup } = await createIsolatedPage(browser);
+    await createUiSession(page, email, password);
     await use(page);
+    await cleanup();
   },
 });
 

@@ -131,13 +131,13 @@ export function MatchCalendar({ matches, matchLinkPrefix }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={prevMonth}>
+          <Button variant="outline" size="sm" onClick={prevMonth} aria-label="Previous month">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-lg font-semibold min-w-[160px] text-center">
             {MONTHS[month]} {year}
           </span>
-          <Button variant="outline" size="sm" onClick={nextMonth}>
+          <Button variant="outline" size="sm" onClick={nextMonth} aria-label="Next month">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>

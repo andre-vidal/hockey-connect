@@ -21,7 +21,6 @@ async function verifyLeagueAdmin() {
 
 export async function GET() {
   try {
-    await verifyAuthenticated();
     const snapshot = await adminDb
       .collection("matches")
       .orderBy("scheduledAt", "asc")
@@ -30,7 +29,7 @@ export async function GET() {
     return NextResponse.json({ matches });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch matches";
-    const status = message === "Unauthorized" ? 401 : 500;
+    const status = 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

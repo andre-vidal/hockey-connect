@@ -71,10 +71,11 @@ export async function POST(
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const inviteUrl = `${baseUrl}/register?invite=player&clubId=${clubId}&playerId=${docRef.id}&token=${inviteToken}&email=${encodeURIComponent(email)}`;
 
-    await sendEmail({
-      to: email,
-      subject: "You've been added to Hockey Connect",
-      html: `
+    try {
+      await sendEmail({
+        to: email,
+        subject: "You've been added to Hockey Connect",
+        html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Welcome to Hockey Connect</h2>
           <p>Hi ${firstName},</p>
@@ -83,7 +84,10 @@ export async function POST(
           <p style="margin-top: 24px; color: #6b7280; font-size: 14px;">If you didn't expect this, you can safely ignore this email.</p>
         </div>
       `,
-    });
+      });
+    } catch (emailError) {
+      console.error("Failed to send invite email:", emailError);
+    }
 
     return NextResponse.json({ player: { id: docRef.id, ...player } }, { status: 201 });
   } catch (error) {

@@ -8,7 +8,15 @@
       "Bash(firebase database:set /maintenance/enabled --data \"false\" --force --project hockey-connect-decb8)",
       "Bash(ls:*)",
       "Bash(find:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx playwright:*)",
+      "Bash(while read:*)",
+      "Bash(do echo:*)",
+      "Bash(done)",
+      "Bash(for dir:*)",
+      "Read(//Users/andrevidal/Documents/freelance/hockey-connect/$dir/**)",
+      "Bash(git -C /Users/andrevidal/Documents/freelance/hockey-connect diff HEAD -- src/components/match/MatchCalendar.tsx)"
     ]
   },
   "hooks": {

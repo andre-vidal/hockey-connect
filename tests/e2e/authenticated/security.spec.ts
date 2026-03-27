@@ -64,3 +64,24 @@ test.describe("authenticated (no roles) — users API", () => {
     expect(res.status()).toBe(403);
   });
 });
+
+test.describe("authenticated (no roles) — matches API", () => {
+  test("POST /api/matches → 403", async ({ authenticatedPage: page }) => {
+    const res = await page.request.post("/api/matches", {
+      data: { leagueId: "x", homeTeamId: "a", awayTeamId: "b", venue: "v", scheduledAt: "2026-01-01T10:00:00Z" },
+    });
+    expect(res.status()).toBe(403);
+  });
+
+  test("PATCH /api/matches/:id → 403", async ({ authenticatedPage: page }) => {
+    const res = await page.request.patch("/api/matches/nonexistent-id", {
+      data: { venue: "Hacked" },
+    });
+    expect(res.status()).toBe(403);
+  });
+
+  test("DELETE /api/matches/:id → 403", async ({ authenticatedPage: page }) => {
+    const res = await page.request.delete("/api/matches/nonexistent-id");
+    expect(res.status()).toBe(403);
+  });
+});
