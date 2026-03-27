@@ -259,3 +259,26 @@ export interface Match {
   updatedAt: string;
   createdBy: string;
 }
+
+// Phase 6: Articles & CMS
+
+export type ArticleStatus = "draft" | "published" | "archived";
+
+export interface Article {
+  id: string;
+  title: string;
+  slug: string;
+  /** TipTap JSON document */
+  content: Record<string, unknown>;
+  excerpt: string;
+  headerImageUrl: string | null;
+  headerImagePath: string | null;
+  status: ArticleStatus;
+  /** Roles that can read this article. Include "public" for unauthenticated access. */
+  visibility: UserRole[];
+  authorId: string;
+  authorName: string;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

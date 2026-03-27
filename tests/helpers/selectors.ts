@@ -195,3 +195,19 @@ export const adminMatches = {
   deleteButton: 'button:has-text("Delete")',
   confirmDeleteButton: 'button:has-text("Delete Match")',
 } as const;
+
+// ── Phase 6: Articles ─────────────────────────────────────────────────────────
+
+export const adminArticles = {
+  newArticleLink: 'a:has-text("New Article")',
+  titleInput: "#title",
+  slugInput: "#slug",
+  excerptInput: "#excerpt",
+  /** Radix Select trigger for status */
+  statusTrigger: "#status",
+  publishButton: 'button:has-text("Publish Article")',
+  saveDraftButton: 'button:has-text("Save Draft")',
+  saveButton: 'button:has-text("Save Changes")',
+  deleteButton: 'button:has-text("Delete")',
+  confirmDeleteButton: 'button:has-text("Delete Article")',
+} as const;
