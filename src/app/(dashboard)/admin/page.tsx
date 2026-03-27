@@ -1,5 +1,6 @@
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { UpcomingMatchesWidget } from "@/components/match/UpcomingMatchesWidget";
 import { Trophy, Users, Swords, FileText } from "lucide-react";
 
 export default function AdminDashboardPage() {
@@ -25,14 +26,7 @@ export default function AdminDashboardPage() {
           </Card>
         ))}
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-500">No recent activity. Start by creating a league or club.</p>
-        </CardContent>
-      </Card>
+      <UpcomingMatchesWidget viewAllHref="/admin/matches" title="Upcoming Matches" limit={5} />
     </DashboardShell>
   );
 }

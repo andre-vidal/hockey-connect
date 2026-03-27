@@ -219,3 +219,43 @@ export interface MatchOfficial {
   updatedAt: string;
   createdBy: string;
 }
+
+// Phase 4: Match Scheduling
+
+export type MatchStatus = "scheduled" | "warmup" | "live" | "completed" | "confirmed";
+
+export interface MatchOfficialAssignment {
+  officialId: string;
+  userId: string;
+  displayName: string;
+  type: OfficialType;
+}
+
+export interface MatchResult {
+  homeScore: number;
+  awayScore: number;
+}
+
+export interface Match {
+  id: string;
+  /** Either leagueId or tournamentId must be set */
+  leagueId?: string;
+  tournamentId?: string;
+  homeTeamId: string;
+  homeTeamName: string;
+  homeClubId: string;
+  awayTeamId: string;
+  awayTeamName: string;
+  awayClubId: string;
+  venue: string;
+  scheduledAt: string; // ISO date-time
+  status: MatchStatus;
+  officials: MatchOfficialAssignment[];
+  result?: MatchResult;
+  matchConfig: MatchIntervalConfig;
+  matchCardConfirmed: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}

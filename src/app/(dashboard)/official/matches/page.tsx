@@ -6,7 +6,6 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Match, MatchStatus } from "@/types";
-import { useAuth } from "@/providers/AuthProvider";
 import { Calendar, MapPin } from "lucide-react";
 
 const statusVariant: Record<MatchStatus, "secondary" | "success" | "default" | "outline" | "warning"> = {
@@ -22,16 +21,15 @@ function formatDateTime(iso: string) {
   return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 }
 
-export default function TeamMatchesPage() {
+export default function OfficialMatchesPage() {
   return (
-    <AuthGuard requiredRoles={["team_admin"]}>
-      <TeamMatchesContent />
+    <AuthGuard requiredRoles={["match_official"]}>
+      <OfficialMatchesContent />
     </AuthGuard>
   );
 }
 
-function TeamMatchesContent() {
-  const { profile } = useAuth();
+function OfficialMatchesContent() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,19 +39,11 @@ function TeamMatchesContent() {
       .then((r) => r.json())
       .then((data) => {
         if (data.error) throw new Error(data.error);
-        const teamIds = profile?.teamIds ?? [];
-        const clubId = profile?.clubId;
-        let list: Match[] = data.matches ?? [];
-        if (teamIds.length > 0) {
-          list = list.filter((m) => teamIds.includes(m.homeTeamId) || teamIds.includes(m.awayTeamId));
-        } else if (clubId) {
-          list = list.filter((m) => m.homeClubId === clubId || m.awayClubId === clubId);
-        }
-        setMatches(list);
+        setMatches(data.matches ?? []);
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [profile]);
+  }, []);
 
   const columns: Column<Match & Record<string, unknown>>[] = [
     {
@@ -96,22 +86,26 @@ function TeamMatchesContent() {
       ),
     },
     {
-      key: "result",
-      header: "Result",
+      key: "officials",
+      header: "My Role",
       cell: (row) => {
-        const result = row.result as { homeScore: number; awayScore: number } | null;
-        if (!result) return <span className="text-gray-400 text-sm">—</span>;
+        const myAssignments = (row.officials as { type: string }[]).map((o) => o.type);
+        if (myAssignments.length === 0) return <span className="text-gray-400 text-sm">—</span>;
         return (
-          <span className="font-mono font-semibold text-sm">
-            {result.homeScore} – {result.awayScore}
-          </span>
+          <div className="flex flex-wrap gap-1">
+            {myAssignments.map((type, i) => (
+              <Badge key={i} variant="secondary">
+                <span className="capitalize">{type.replace("_", " ")}</span>
+              </Badge>
+            ))}
+          </div>
         );
       },
     },
   ];
 
   return (
-    <DashboardShell title="Matches" description="Your team's match schedule.">
+    <DashboardShell title="My Matches" description="All matches you are assigned to officiate.">
       {error && (
         <div className="rounded-md bg-red-50 border border-red-200 p-4 text-sm text-red-700">{error}</div>
       )}
@@ -121,7 +115,7 @@ function TeamMatchesContent() {
         searchable
         searchPlaceholder="Search matches..."
         loading={loading}
-        emptyMessage="No matches scheduled for your team."
+        emptyMessage="No match assignments found."
       />
     </DashboardShell>
   );

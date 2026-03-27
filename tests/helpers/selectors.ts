@@ -175,3 +175,23 @@ export const clubUsers = {
   editUserButton: 'button:has(.lucide-pencil)',
   saveButton: 'button:has-text("Save Changes")',
 } as const;
+
+// ── Phase 4: Matches ──────────────────────────────────────────────────────────
+
+export const adminMatches = {
+  newMatchLink: 'a:has-text("New Match")',
+  /** Radix Select trigger for competition type (league/tournament) */
+  contextTrigger: "#context",
+  /** Radix Select trigger for league */
+  leagueTrigger: "#leagueId",
+  /** Radix Select trigger for home team */
+  homeTeamTrigger: "#homeTeamId",
+  /** Radix Select trigger for away team */
+  awayTeamTrigger: "#awayTeamId",
+  scheduledAtInput: "#scheduledAt",
+  venueInput: "#venue",
+  submitButton: 'button:has-text("Create Match")',
+  saveButton: 'button:has-text("Save Changes")',
+  deleteButton: 'button:has-text("Delete")',
+  confirmDeleteButton: 'button:has-text("Delete Match")',
+} as const;

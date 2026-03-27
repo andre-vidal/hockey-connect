@@ -7,7 +7,8 @@
       "Bash(firebase database:set /maintenance/enabled --data \"true\" --force --project hockey-connect-decb8)",
       "Bash(firebase database:set /maintenance/enabled --data \"false\" --force --project hockey-connect-decb8)",
       "Bash(ls:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(cat:*)"
     ]
   },
   "hooks": {
