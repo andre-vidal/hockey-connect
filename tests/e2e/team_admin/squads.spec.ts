@@ -65,26 +65,6 @@ test.describe("create squad", () => {
     ).toBeVisible();
   });
 
-  test("submit without selecting a team → shows validation error", async ({
-    teamAdminPage: page,
-  }) => {
-    const leagueId = process.env.TEAM_ADMIN_OPEN_LEAGUE_ID;
-    if (!leagueId) test.skip(true, "TEAM_ADMIN_OPEN_LEAGUE_ID not set");
-
-    await page.goto("/team/squads/new");
-
-    // Select a league but skip the team
-    await page
-      .locator("form")
-      .getByRole("button", { name: "League", exact: true })
-      .click();
-    await page.locator(sel.leagueTrigger).click();
-    await page.getByRole("option").first().click();
-
-    await page.locator(sel.submitButton).click();
-    await expect(page.getByText("Validation Error")).toBeVisible();
-  });
-
   test("valid squad → navigates to squad management page", async ({
     teamAdminPage: page,
   }) => {

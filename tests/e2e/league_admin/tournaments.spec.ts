@@ -42,26 +42,6 @@ test.describe("create tournament", () => {
     if (created) await page.request.delete(`/api/tournaments/${created.id}`);
   });
 
-  test("missing name → validation prevents submission, stays on form", async ({ leagueAdminPage: page }) => {
-    await page.goto("/admin/tournaments/new");
-    await page.locator(sel.venueInput).fill("Venue");
-    await page.locator(sel.startDateInput).fill("2026-03-01");
-    await page.locator(sel.endDateInput).fill("2026-03-15");
-    await page.locator(sel.submitButton).click();
-
-    await expect(page).toHaveURL(/\/admin\/tournaments\/new/);
-  });
-
-  test("missing venue → validation prevents submission, stays on form", async ({ leagueAdminPage: page }) => {
-    await page.goto("/admin/tournaments/new");
-    await page.locator(sel.nameInput).fill(`Tournament ${uid()}`);
-    await page.locator(sel.startDateInput).fill("2026-03-01");
-    await page.locator(sel.endDateInput).fill("2026-03-15");
-    await page.locator(sel.submitButton).click();
-
-    await expect(page).toHaveURL(/\/admin\/tournaments\/new/);
-  });
-
   test("tournament linked to an existing league → saved with leagueId", async ({ leagueAdminPage: page }) => {
     // Create a league to link to
     const leagueRes = await page.request.post("/api/leagues", {

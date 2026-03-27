@@ -4,11 +4,23 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
 import { Mail } from "lucide-react";
@@ -18,7 +30,13 @@ export default function InviteClubPlayerPage() {
   const { profile } = useAuth();
   const { toast } = useToast();
 
-  const [form, setForm] = useState({ firstName: "", lastName: "", email: "", position: "", jerseyNumber: "" });
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    position: "",
+    jerseyNumber: "",
+  });
   const [saving, setSaving] = useState(false);
 
   const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -26,16 +44,14 @@ export default function InviteClubPlayerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.firstName || !form.lastName || !form.email) {
-      toast({ title: "Validation Error", description: "First name, last name, and email are required.", variant: "destructive" });
-      return;
-    }
     if (!profile?.clubId) return;
     setSaving(true);
     try {
       const payload = {
         ...form,
-        jerseyNumber: form.jerseyNumber ? parseInt(form.jerseyNumber, 10) : null,
+        jerseyNumber: form.jerseyNumber
+          ? parseInt(form.jerseyNumber, 10)
+          : null,
       };
       const res = await fetch(`/api/clubs/${profile.clubId}/players/invite`, {
         method: "POST",
@@ -50,7 +66,12 @@ export default function InviteClubPlayerPage() {
       });
       router.push("/club/players");
     } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to send invite", variant: "destructive" });
+      toast({
+        title: "Error",
+        description:
+          err instanceof Error ? err.message : "Failed to send invite",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -58,7 +79,10 @@ export default function InviteClubPlayerPage() {
 
   return (
     <AuthGuard requiredRoles={["club_admin"]}>
-      <DashboardShell title="Invite Player" description="Invite a player via email to join your roster.">
+      <DashboardShell
+        title="Invite Player"
+        description="Invite a player via email to join your roster."
+      >
         <Card className="max-w-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -66,8 +90,9 @@ export default function InviteClubPlayerPage() {
               Send Player Invitation
             </CardTitle>
             <CardDescription>
-              A player record will be created immediately in &quot;unclaimed&quot; state. The player will receive
-              an email with a link to create their account and claim the profile.
+              A player record will be created immediately in
+              &quot;unclaimed&quot; state. The player will receive an email with
+              a link to create their account and claim the profile.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -75,24 +100,48 @@ export default function InviteClubPlayerPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label htmlFor="firstName">First Name *</Label>
-                  <Input id="firstName" value={form.firstName} onChange={set("firstName")} required />
+                  <Input
+                    id="firstName"
+                    value={form.firstName}
+                    onChange={set("firstName")}
+                    required
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="lastName">Last Name *</Label>
-                  <Input id="lastName" value={form.lastName} onChange={set("lastName")} required />
+                  <Input
+                    id="lastName"
+                    value={form.lastName}
+                    onChange={set("lastName")}
+                    required
+                  />
                 </div>
               </div>
 
               <div className="space-y-1">
                 <Label htmlFor="email">Email *</Label>
-                <Input id="email" type="email" value={form.email} onChange={set("email")} required placeholder="player@example.com" />
+                <Input
+                  id="email"
+                  type="email"
+                  value={form.email}
+                  onChange={set("email")}
+                  required
+                  placeholder="player@example.com"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <Label htmlFor="position">Position</Label>
-                  <Select value={form.position} onValueChange={(v) => setForm((f) => ({ ...f, position: v }))}>
-                    <SelectTrigger id="position"><SelectValue placeholder="Select" /></SelectTrigger>
+                  <Select
+                    value={form.position}
+                    onValueChange={(v) =>
+                      setForm((f) => ({ ...f, position: v }))
+                    }
+                  >
+                    <SelectTrigger id="position">
+                      <SelectValue placeholder="Select" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="goalkeeper">Goalkeeper</SelectItem>
                       <SelectItem value="defender">Defender</SelectItem>
@@ -104,7 +153,14 @@ export default function InviteClubPlayerPage() {
                 </div>
                 <div className="space-y-1">
                   <Label htmlFor="jerseyNumber">Jersey Number</Label>
-                  <Input id="jerseyNumber" type="number" min="1" max="99" value={form.jerseyNumber} onChange={set("jerseyNumber")} />
+                  <Input
+                    id="jerseyNumber"
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={form.jerseyNumber}
+                    onChange={set("jerseyNumber")}
+                  />
                 </div>
               </div>
 
@@ -112,7 +168,13 @@ export default function InviteClubPlayerPage() {
                 <Button type="submit" disabled={saving}>
                   {saving ? "Sending..." : "Send Invitation"}
                 </Button>
-                <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.back()}
+                >
+                  Cancel
+                </Button>
               </div>
             </form>
           </CardContent>

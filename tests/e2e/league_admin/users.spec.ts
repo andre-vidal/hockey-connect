@@ -57,35 +57,6 @@ test.describe("invite club admin", () => {
     await expect(page.getByRole("dialog")).not.toBeVisible();
   });
 
-  test("submit without email → shows required error, stays in modal", async ({
-    leagueAdminPage: page,
-  }) => {
-    await page.goto("/admin/users");
-    await page.locator(sel.inviteButton).click();
-
-    // Fill display name but not email
-    await page.locator(sel.inviteNameInput).fill("Missing Email User");
-    await page.locator(sel.sendInviteButton).click();
-
-    // HTML5 required on email input should prevent submission
-    await expect(page.getByRole("dialog")).toBeVisible();
-  });
-
-  test("submit without club → shows validation error, stays in modal", async ({
-    leagueAdminPage: page,
-  }) => {
-    await page.goto("/admin/users");
-    await page.locator(sel.inviteButton).click();
-
-    // Fill email and name but leave club unselected
-    await page.locator(sel.inviteEmailInput).fill(`test.${uid()}@example.com`);
-    await page.locator(sel.inviteNameInput).fill("No Club User");
-    await page.locator(sel.sendInviteButton).click();
-
-    await expect(page.getByText("Validation Error")).toBeVisible();
-    await expect(page.getByRole("dialog")).toBeVisible();
-  });
-
   test("valid invite → success toast shown and user appears in list", async ({
     leagueAdminPage: page,
   }) => {

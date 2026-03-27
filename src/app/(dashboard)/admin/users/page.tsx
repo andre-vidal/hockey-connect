@@ -8,15 +8,35 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter } from "@/components/ui/modal";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalTitle,
+  ModalFooter,
+} from "@/components/ui/modal";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/useToast";
 import { useRole } from "@/hooks/useRole";
 import { UserProfile, Club, UserRole } from "@/types";
 import { UserPlus, Pencil } from "lucide-react";
 
-const ALL_ROLES: UserRole[] = ["root", "league_admin", "match_official", "club_admin", "team_admin", "player", "public"];
+const ALL_ROLES: UserRole[] = [
+  "root",
+  "league_admin",
+  "match_official",
+  "club_admin",
+  "team_admin",
+  "player",
+  "public",
+];
 
 // Lower = more privileged
 const ROLE_LEVEL: Record<UserRole, number> = {
@@ -29,7 +49,10 @@ const ROLE_LEVEL: Record<UserRole, number> = {
   public: 5,
 };
 
-const roleColors: Record<UserRole, "default" | "secondary" | "warning" | "success" | "outline"> = {
+const roleColors: Record<
+  UserRole,
+  "default" | "secondary" | "warning" | "success" | "outline"
+> = {
   root: "default",
   league_admin: "default",
   match_official: "warning",
@@ -61,12 +84,20 @@ export default function UsersPage() {
 
   // Invite modal
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [inviteForm, setInviteForm] = useState({ email: "", displayName: "", clubId: "" });
+  const [inviteForm, setInviteForm] = useState({
+    email: "",
+    displayName: "",
+    clubId: "",
+  });
   const [inviting, setInviting] = useState(false);
 
   // Edit modal
   const [editTarget, setEditTarget] = useState<UserProfile | null>(null);
-  const [editForm, setEditForm] = useState<EditForm>({ roles: [], isActive: true, clubId: "" });
+  const [editForm, setEditForm] = useState<EditForm>({
+    roles: [],
+    isActive: true,
+    clubId: "",
+  });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -95,7 +126,9 @@ export default function UsersPage() {
   function toggleEditRole(role: UserRole) {
     setEditForm((f) => ({
       ...f,
-      roles: f.roles.includes(role) ? f.roles.filter((r) => r !== role) : [...f.roles, role],
+      roles: f.roles.includes(role)
+        ? f.roles.filter((r) => r !== role)
+        : [...f.roles, role],
     }));
   }
 
@@ -120,14 +153,24 @@ export default function UsersPage() {
       setUsers((prev) =>
         prev.map((u) =>
           u.uid === editTarget.uid
-            ? { ...u, roles: editForm.roles, isActive: editForm.isActive, clubId: editForm.clubId || null }
-            : u
-        )
+            ? {
+                ...u,
+                roles: editForm.roles,
+                isActive: editForm.isActive,
+                clubId: editForm.clubId || null,
+              }
+            : u,
+        ),
       );
       toast({ title: "User updated" });
       setEditTarget(null);
     } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to update user", variant: "destructive" });
+      toast({
+        title: "Error",
+        description:
+          err instanceof Error ? err.message : "Failed to update user",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -135,10 +178,6 @@ export default function UsersPage() {
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
-    if (!inviteForm.email || !inviteForm.displayName || !inviteForm.clubId) {
-      toast({ title: "Validation Error", description: "Email, display name, and club are required.", variant: "destructive" });
-      return;
-    }
     setInviting(true);
     try {
       const res = await fetch("/api/users/invite", {
@@ -148,7 +187,10 @@ export default function UsersPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to send invite");
-      toast({ title: "Invite sent", description: `Invitation sent to ${inviteForm.email}.` });
+      toast({
+        title: "Invite sent",
+        description: `Invitation sent to ${inviteForm.email}.`,
+      });
       setShowInviteModal(false);
       setInviteForm({ email: "", displayName: "", clubId: "" });
       fetch("/api/users")
@@ -156,7 +198,11 @@ export default function UsersPage() {
         .then((d) => setUsers(d.users ?? []))
         .catch(() => {});
     } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to invite", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to invite",
+        variant: "destructive",
+      });
     } finally {
       setInviting(false);
     }
@@ -171,7 +217,11 @@ export default function UsersPage() {
       key: "displayName",
       header: "Name",
       sortable: true,
-      cell: (row) => <span className="font-medium">{(row.displayName as string) || "—"}</span>,
+      cell: (row) => (
+        <span className="font-medium">
+          {(row.displayName as string) || "—"}
+        </span>
+      ),
     },
     {
       key: "email",
@@ -184,7 +234,11 @@ export default function UsersPage() {
       cell: (row) => (
         <div className="flex flex-wrap gap-1">
           {(row.roles as UserRole[])?.map((role) => (
-            <Badge key={role} variant={roleColors[role]} className="text-xs capitalize">
+            <Badge
+              key={role}
+              variant={roleColors[role]}
+              className="text-xs capitalize"
+            >
               {role.replace(/_/g, " ")}
             </Badge>
           ))}
@@ -196,7 +250,11 @@ export default function UsersPage() {
       header: "Club",
       cell: (row) => {
         const club = clubs.find((c) => c.id === (row.clubId as string));
-        return <span className="text-sm text-gray-600">{club?.name ?? (row.clubId ? "—" : "None")}</span>;
+        return (
+          <span className="text-sm text-gray-600">
+            {club?.name ?? (row.clubId ? "—" : "None")}
+          </span>
+        );
       },
     },
     {
@@ -233,7 +291,7 @@ export default function UsersPage() {
         title="Users"
         description="Manage registered users and their access."
         actions={
-          (isLeagueAdmin || isRoot) ? (
+          isLeagueAdmin || isRoot ? (
             <Button onClick={() => setShowInviteModal(true)}>
               <UserPlus className="h-4 w-4 mr-1" />
               Invite Club Admin
@@ -256,7 +314,12 @@ export default function UsersPage() {
         />
 
         {/* Edit User Modal */}
-        <Modal open={!!editTarget} onOpenChange={(open) => { if (!open) setEditTarget(null); }}>
+        <Modal
+          open={!!editTarget}
+          onOpenChange={(open) => {
+            if (!open) setEditTarget(null);
+          }}
+        >
           <ModalContent>
             <ModalHeader>
               <ModalTitle>Edit User</ModalTitle>
@@ -264,7 +327,9 @@ export default function UsersPage() {
             <div className="space-y-5 mt-4">
               {/* Name / email (read-only) */}
               <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-700">{editTarget?.displayName || editTarget?.email}</p>
+                <p className="text-sm font-medium text-gray-700">
+                  {editTarget?.displayName || editTarget?.email}
+                </p>
                 {editTarget?.displayName && (
                   <p className="text-xs text-gray-400">{editTarget.email}</p>
                 )}
@@ -285,7 +350,9 @@ export default function UsersPage() {
                         checked={editForm.roles.includes(role)}
                         onChange={() => toggleEditRole(role)}
                       />
-                      <span className="text-sm capitalize">{role.replace(/_/g, " ")}</span>
+                      <span className="text-sm capitalize">
+                        {role.replace(/_/g, " ")}
+                      </span>
                     </label>
                   ))}
                 </div>
@@ -296,12 +363,19 @@ export default function UsersPage() {
                 <Label htmlFor="editClub">
                   Club
                   {!isLeagueAdmin && !isRoot && (
-                    <span className="ml-2 text-xs text-gray-400">(managed by League Admin)</span>
+                    <span className="ml-2 text-xs text-gray-400">
+                      (managed by League Admin)
+                    </span>
                   )}
                 </Label>
                 <Select
                   value={editForm.clubId || "none"}
-                  onValueChange={(v) => setEditForm((f) => ({ ...f, clubId: v === "none" ? "" : v }))}
+                  onValueChange={(v) =>
+                    setEditForm((f) => ({
+                      ...f,
+                      clubId: v === "none" ? "" : v,
+                    }))
+                  }
                   disabled={!isLeagueAdmin && !isRoot}
                 >
                   <SelectTrigger id="editClub">
@@ -310,7 +384,9 @@ export default function UsersPage() {
                   <SelectContent>
                     <SelectItem value="none">No club</SelectItem>
                     {clubs.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -322,13 +398,19 @@ export default function UsersPage() {
                 <Switch
                   id="editActive"
                   checked={editForm.isActive}
-                  onCheckedChange={(checked) => setEditForm((f) => ({ ...f, isActive: checked }))}
+                  onCheckedChange={(checked) =>
+                    setEditForm((f) => ({ ...f, isActive: checked }))
+                  }
                 />
               </div>
             </div>
 
             <ModalFooter>
-              <Button type="button" variant="outline" onClick={() => setEditTarget(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditTarget(null)}
+              >
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={saving}>
@@ -346,44 +428,66 @@ export default function UsersPage() {
             </ModalHeader>
             <form onSubmit={handleInvite} className="space-y-4 mt-4">
               <div className="space-y-1.5">
-                <Label htmlFor="inviteEmail">Email Address <span className="text-red-500">*</span></Label>
+                <Label htmlFor="inviteEmail">
+                  Email Address <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="inviteEmail"
                   type="email"
                   value={inviteForm.email}
-                  onChange={(e) => setInviteForm((p) => ({ ...p, email: e.target.value }))}
+                  onChange={(e) =>
+                    setInviteForm((p) => ({ ...p, email: e.target.value }))
+                  }
                   placeholder="admin@club.com"
                   required
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="inviteName">Display Name <span className="text-red-500">*</span></Label>
+                <Label htmlFor="inviteName">
+                  Display Name <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="inviteName"
                   value={inviteForm.displayName}
-                  onChange={(e) => setInviteForm((p) => ({ ...p, displayName: e.target.value }))}
+                  onChange={(e) =>
+                    setInviteForm((p) => ({
+                      ...p,
+                      displayName: e.target.value,
+                    }))
+                  }
                   placeholder="Jane Smith"
                   required
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="inviteClub">Club <span className="text-red-500">*</span></Label>
+                <Label htmlFor="inviteClub">
+                  Club <span className="text-red-500">*</span>
+                </Label>
                 <Select
                   value={inviteForm.clubId}
-                  onValueChange={(v) => setInviteForm((p) => ({ ...p, clubId: v }))}
+                  onValueChange={(v) =>
+                    setInviteForm((p) => ({ ...p, clubId: v }))
+                  }
+                  required
                 >
                   <SelectTrigger id="inviteClub">
                     <SelectValue placeholder="Select a club..." />
                   </SelectTrigger>
                   <SelectContent>
                     {clubs.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <ModalFooter>
-                <Button type="button" variant="outline" onClick={() => setShowInviteModal(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowInviteModal(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit" disabled={inviting}>

@@ -59,10 +59,6 @@ export default function NewTournamentPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name || !form.venue || !form.startDate || !form.endDate) {
-      toast({ title: "Validation Error", description: "Name, venue, start date, and end date are required.", variant: "destructive" });
-      return;
-    }
     setSaving(true);
     try {
       const res = await fetch("/api/tournaments", {

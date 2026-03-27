@@ -71,10 +71,6 @@ export default function NewClubPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name) {
-      toast({ title: "Validation Error", description: "Club name is required.", variant: "destructive" });
-      return;
-    }
     setSaving(true);
     try {
       let logoUrl = form.logoUrl;

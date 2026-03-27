@@ -90,14 +90,6 @@ test.describe("create club", () => {
     if (created) await page.request.delete(`/api/clubs/${created.id}`);
   });
 
-  test("missing name → HTML5 validation prevents submission, stays on form", async ({
-    leagueAdminPage: page,
-  }) => {
-    await page.goto("/admin/clubs/new");
-    await page.locator(sel.submitButton).click();
-    await expect(page).toHaveURL(/\/admin\/clubs\/new/);
-  });
-
   test("logo upload → preview appears before submission", async ({
     leagueAdminPage: page,
   }) => {

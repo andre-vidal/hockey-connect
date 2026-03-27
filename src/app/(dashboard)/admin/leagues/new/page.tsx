@@ -55,10 +55,6 @@ export default function NewLeaguePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name || !form.country || !form.gender) {
-      toast({ title: "Validation Error", description: "Name, country, and gender are required.", variant: "destructive" });
-      return;
-    }
     setSaving(true);
     try {
       const res = await fetch("/api/leagues", {

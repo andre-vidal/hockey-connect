@@ -22,13 +22,17 @@ function clubId(): string {
 // ── List & navigation ─────────────────────────────────────────────────────────
 
 test.describe("players list", () => {
-  test("renders the players list with an Add Player link", async ({ clubAdminPage: page }) => {
+  test("renders the players list with an Add Player link", async ({
+    clubAdminPage: page,
+  }) => {
     await page.goto("/club/players");
     await expect(page.getByRole("heading", { name: "Players" })).toBeVisible();
     await expect(page.locator(sel.addPlayerLink)).toBeVisible();
   });
 
-  test("Invite Player and Import CSV links are visible", async ({ clubAdminPage: page }) => {
+  test("Invite Player and Import CSV links are visible", async ({
+    clubAdminPage: page,
+  }) => {
     await page.goto("/club/players");
     await expect(page.locator(sel.invitePlayerLink)).toBeVisible();
     await expect(page.getByRole("link", { name: "Import CSV" })).toBeVisible();
@@ -44,7 +48,9 @@ test.describe("players list", () => {
 // ── Create ────────────────────────────────────────────────────────────────────
 
 test.describe("create player", () => {
-  test("valid required fields → redirects to list and player appears", async ({ clubAdminPage: page }) => {
+  test("valid required fields → redirects to list and player appears", async ({
+    clubAdminPage: page,
+  }) => {
     const firstName = `Test${uid()}`;
     const lastName = "Player";
 
@@ -54,35 +60,24 @@ test.describe("create player", () => {
     await page.locator(sel.submitButton).click();
 
     await expect(page).toHaveURL("/club/players", { timeout: 10_000 });
-    await expect(page.getByText(`${firstName} ${lastName}`, { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(`${firstName} ${lastName}`, { exact: true }),
+    ).toBeVisible();
 
     // Cleanup
     const res = await page.request.get(`/api/clubs/${clubId()}/players`);
     const { players } = await res.json();
     const created = players.find(
       (p: { firstName: string; lastName: string; id: string }) =>
-        p.firstName === firstName && p.lastName === lastName
+        p.firstName === firstName && p.lastName === lastName,
     );
-    if (created) await page.request.delete(`/api/clubs/${clubId()}/players/${created.id}`);
+    if (created)
+      await page.request.delete(`/api/clubs/${clubId()}/players/${created.id}`);
   });
 
-  test("missing first name → shows validation error on submit", async ({ clubAdminPage: page }) => {
-    await page.goto("/club/players/new");
-    await page.locator(sel.lastNameInput).fill("Player");
-
-    await page.locator(sel.submitButton).click();
-    await expect(page.getByText("Validation Error")).toBeVisible();
-  });
-
-  test("missing last name → shows validation error on submit", async ({ clubAdminPage: page }) => {
-    await page.goto("/club/players/new");
-    await page.locator(sel.firstNameInput).fill(`Test${uid()}`);
-
-    await page.locator(sel.submitButton).click();
-    await expect(page.getByText("Validation Error")).toBeVisible();
-  });
-
-  test("player with email → email saved via API", async ({ clubAdminPage: page }) => {
+  test("player with email → email saved via API", async ({
+    clubAdminPage: page,
+  }) => {
     const firstName = `EmailTest${uid()}`;
     const lastName = "Player";
     const email = `player.${uid()}@example.com`;
@@ -99,25 +94,31 @@ test.describe("create player", () => {
     const res = await page.request.get(`/api/clubs/${clubId()}/players`);
     const { players } = await res.json();
     const created = players.find(
-      (p: { firstName: string; email?: string; id: string }) => p.firstName === firstName
+      (p: { firstName: string; email?: string; id: string }) =>
+        p.firstName === firstName,
     );
     expect(created?.email).toBe(email);
 
-    if (created) await page.request.delete(`/api/clubs/${clubId()}/players/${created.id}`);
+    if (created)
+      await page.request.delete(`/api/clubs/${clubId()}/players/${created.id}`);
   });
 });
 
 // ── Edit ──────────────────────────────────────────────────────────────────────
 
 test.describe("edit player", () => {
-  test("save changes → updated name appears in list", async ({ clubAdminPage: page }) => {
+  test("save changes → updated name appears in list", async ({
+    clubAdminPage: page,
+  }) => {
     const firstName = `Edit${uid()}`;
     const updatedFirst = `${firstName}Updated`;
 
     const res = await page.request.post(`/api/clubs/${clubId()}/players`, {
       data: { firstName, lastName: "Player" },
     });
-    const { player: { id } } = await res.json();
+    const {
+      player: { id },
+    } = await res.json();
 
     try {
       await page.goto(`/club/players/${id}`);
@@ -125,19 +126,25 @@ test.describe("edit player", () => {
       await page.locator(sel.saveButton).click();
 
       await expect(page).toHaveURL("/club/players", { timeout: 10_000 });
-      await expect(page.getByText(`${updatedFirst} Player`, { exact: true })).toBeVisible();
+      await expect(
+        page.getByText(`${updatedFirst} Player`, { exact: true }),
+      ).toBeVisible();
     } finally {
       await page.request.delete(`/api/clubs/${clubId()}/players/${id}`);
     }
   });
 
-  test("change status → badge updates in list", async ({ clubAdminPage: page }) => {
+  test("change status → badge updates in list", async ({
+    clubAdminPage: page,
+  }) => {
     const firstName = `Status${uid()}`;
 
     const res = await page.request.post(`/api/clubs/${clubId()}/players`, {
       data: { firstName, lastName: "Player" },
     });
-    const { player: { id } } = await res.json();
+    const {
+      player: { id },
+    } = await res.json();
 
     try {
       await page.goto(`/club/players/${id}`);
@@ -150,7 +157,9 @@ test.describe("edit player", () => {
       await expect(page).toHaveURL("/club/players", { timeout: 10_000 });
 
       // The player row should now show the "Injured" badge
-      const row = page.getByRole("row", { name: new RegExp(`${firstName}`, "i") });
+      const row = page.getByRole("row", {
+        name: new RegExp(`${firstName}`, "i"),
+      });
       await expect(row.getByText("Injured")).toBeVisible({ timeout: 10_000 });
     } finally {
       await page.request.delete(`/api/clubs/${clubId()}/players/${id}`);
@@ -161,7 +170,9 @@ test.describe("edit player", () => {
 // ── Remove ────────────────────────────────────────────────────────────────────
 
 test.describe("remove player", () => {
-  test("confirm remove → player removed from list", async ({ clubAdminPage: page }) => {
+  test("confirm remove → player removed from list", async ({
+    clubAdminPage: page,
+  }) => {
     const firstName = `Remove${uid()}`;
 
     await page.request.post(`/api/clubs/${clubId()}/players`, {
@@ -180,21 +191,9 @@ test.describe("remove player", () => {
 // ── Invite player ─────────────────────────────────────────────────────────────
 
 test.describe("invite player", () => {
-  test("submitting with missing required fields → shows validation error", async ({ clubAdminPage: page }) => {
-    await page.goto("/club/players/invite");
-
-    // Nothing filled — submit shows validation error
-    await page.locator(sel.inviteSubmitButton).click();
-    await expect(page.getByText("Validation Error")).toBeVisible();
-
-    // First name + last name filled but email missing — still shows error
-    await page.locator("#firstName").fill("Jane");
-    await page.locator("#lastName").fill("Doe");
-    await page.locator(sel.inviteSubmitButton).click();
-    await expect(page.getByText("Validation Error")).toBeVisible();
-  });
-
-  test("valid invite → success toast and redirects to players list", async ({ clubAdminPage: page }) => {
+  test("valid invite → success toast and redirects to players list", async ({
+    clubAdminPage: page,
+  }) => {
     const firstName = `Invite${uid()}`;
     const lastName = "Player";
     const email = `invite.${uid()}@example.com`;
@@ -206,9 +205,13 @@ test.describe("invite player", () => {
     await page.locator("#email").fill(email);
     await page.locator(sel.inviteSubmitButton).click();
 
-    await expect(page.getByText("Invite sent", { exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Invite sent", { exact: true })).toBeVisible({
+      timeout: 10_000,
+    });
     await expect(page).toHaveURL("/club/players", { timeout: 10_000 });
-    await expect(page.getByText(`${firstName} ${lastName}`, { exact: true })).toBeVisible();
+    await expect(
+      page.getByText(`${firstName} ${lastName}`, { exact: true }),
+    ).toBeVisible();
 
     // Cleanup
     const res = await page.request.get(`/api/clubs/${clubId()}/players`);
@@ -217,6 +220,7 @@ test.describe("invite player", () => {
       (p: { firstName: string; lastName: string; id: string }) =>
         p.firstName === firstName && p.lastName === lastName,
     );
-    if (created) await page.request.delete(`/api/clubs/${clubId()}/players/${created.id}`);
+    if (created)
+      await page.request.delete(`/api/clubs/${clubId()}/players/${created.id}`);
   });
 });

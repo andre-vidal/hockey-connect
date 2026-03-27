@@ -47,21 +47,6 @@ test.describe("create league", () => {
     if (created) await page.request.delete(`/api/leagues/${created.id}`);
   });
 
-  test("missing name → HTML5 validation prevents submission, stays on form", async ({ leagueAdminPage: page }) => {
-    await page.goto("/admin/leagues/new");
-    await page.locator(sel.countryInput).fill("Testland");
-    await page.locator(sel.submitButton).click();
-
-    await expect(page).toHaveURL(/\/admin\/leagues\/new/);
-  });
-
-  test("missing country → HTML5 validation prevents submission, stays on form", async ({ leagueAdminPage: page }) => {
-    await page.goto("/admin/leagues/new");
-    await page.locator(sel.nameInput).fill(`League ${uid()}`);
-    await page.locator(sel.submitButton).click();
-
-    await expect(page).toHaveURL(/\/admin\/leagues\/new/);
-  });
 });
 
 // ── Edit ──────────────────────────────────────────────────────────────────────

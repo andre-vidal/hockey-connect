@@ -7,7 +7,13 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/useToast";
@@ -23,8 +29,15 @@ export default function NewClubSquadPage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  const [form, setForm] = useState({ teamId: "", leagueId: "", tournamentId: "", season: "" });
-  const [competitionType, setCompetitionType] = useState<"league" | "tournament">("league");
+  const [form, setForm] = useState({
+    teamId: "",
+    leagueId: "",
+    tournamentId: "",
+    season: "",
+  });
+  const [competitionType, setCompetitionType] = useState<
+    "league" | "tournament"
+  >("league");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -39,16 +52,18 @@ export default function NewClubSquadPage() {
         setLeagues(leaguesData.leagues ?? []);
         setTournaments(tournamentsData.tournaments ?? []);
       })
-      .catch((err) => toast({ title: "Error loading data", description: err.message, variant: "destructive" }))
+      .catch((err) =>
+        toast({
+          title: "Error loading data",
+          description: err.message,
+          variant: "destructive",
+        }),
+      )
       .finally(() => setLoadingData(false));
   }, [profile?.clubId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.teamId || (competitionType === "league" ? !form.leagueId : !form.tournamentId)) {
-      toast({ title: "Validation Error", description: "Team and league/tournament selection are required.", variant: "destructive" });
-      return;
-    }
     if (!profile?.clubId) return;
     setSaving(true);
     try {
@@ -56,7 +71,8 @@ export default function NewClubSquadPage() {
         teamId: form.teamId,
         clubId: profile.clubId,
         leagueId: competitionType === "league" ? form.leagueId : null,
-        tournamentId: competitionType === "tournament" ? form.tournamentId : null,
+        tournamentId:
+          competitionType === "tournament" ? form.tournamentId : null,
         season: form.season,
         players: [],
       };
@@ -67,10 +83,18 @@ export default function NewClubSquadPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast({ title: "Squad created", description: "Add players to your squad." });
+      toast({
+        title: "Squad created",
+        description: "Add players to your squad.",
+      });
       router.push(`/club/squads/${data.squad.id}`);
     } catch (err) {
-      toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to create squad", variant: "destructive" });
+      toast({
+        title: "Error",
+        description:
+          err instanceof Error ? err.message : "Failed to create squad",
+        variant: "destructive",
+      });
     } finally {
       setSaving(false);
     }
@@ -78,7 +102,10 @@ export default function NewClubSquadPage() {
 
   return (
     <AuthGuard requiredRoles={["club_admin"]}>
-      <DashboardShell title="New Squad" description="Create a squad for a league or tournament submission.">
+      <DashboardShell
+        title="New Squad"
+        description="Create a squad for a league or tournament submission."
+      >
         <Card className="max-w-lg">
           <CardHeader>
             <CardTitle>Squad Details</CardTitle>
@@ -90,11 +117,19 @@ export default function NewClubSquadPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1">
                   <Label htmlFor="teamId">Team *</Label>
-                  <Select value={form.teamId} onValueChange={(v) => setForm((f) => ({ ...f, teamId: v }))}>
-                    <SelectTrigger id="teamId"><SelectValue placeholder="Select team" /></SelectTrigger>
+                  <Select
+                    value={form.teamId}
+                    onValueChange={(v) => setForm((f) => ({ ...f, teamId: v }))}
+                    required
+                  >
+                    <SelectTrigger id="teamId">
+                      <SelectValue placeholder="Select team" />
+                    </SelectTrigger>
                     <SelectContent>
                       {teams.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -103,19 +138,47 @@ export default function NewClubSquadPage() {
                 <div className="space-y-1">
                   <Label>Competition Type *</Label>
                   <div className="flex gap-2">
-                    <Button type="button" variant={competitionType === "league" ? "default" : "outline"} size="sm" onClick={() => setCompetitionType("league")}>League</Button>
-                    <Button type="button" variant={competitionType === "tournament" ? "default" : "outline"} size="sm" onClick={() => setCompetitionType("tournament")}>Tournament</Button>
+                    <Button
+                      type="button"
+                      variant={
+                        competitionType === "league" ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setCompetitionType("league")}
+                    >
+                      League
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={
+                        competitionType === "tournament" ? "default" : "outline"
+                      }
+                      size="sm"
+                      onClick={() => setCompetitionType("tournament")}
+                    >
+                      Tournament
+                    </Button>
                   </div>
                 </div>
 
                 {competitionType === "league" ? (
                   <div className="space-y-1">
                     <Label htmlFor="leagueId">League *</Label>
-                    <Select value={form.leagueId} onValueChange={(v) => setForm((f) => ({ ...f, leagueId: v }))}>
-                      <SelectTrigger id="leagueId"><SelectValue placeholder="Select league" /></SelectTrigger>
+                    <Select
+                      value={form.leagueId}
+                      onValueChange={(v) =>
+                        setForm((f) => ({ ...f, leagueId: v }))
+                      }
+                      required
+                    >
+                      <SelectTrigger id="leagueId">
+                        <SelectValue placeholder="Select league" />
+                      </SelectTrigger>
                       <SelectContent>
                         {leagues.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                          <SelectItem key={l.id} value={l.id}>
+                            {l.name}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -123,11 +186,21 @@ export default function NewClubSquadPage() {
                 ) : (
                   <div className="space-y-1">
                     <Label htmlFor="tournamentId">Tournament *</Label>
-                    <Select value={form.tournamentId} onValueChange={(v) => setForm((f) => ({ ...f, tournamentId: v }))}>
-                      <SelectTrigger id="tournamentId"><SelectValue placeholder="Select tournament" /></SelectTrigger>
+                    <Select
+                      value={form.tournamentId}
+                      onValueChange={(v) =>
+                        setForm((f) => ({ ...f, tournamentId: v }))
+                      }
+                      required
+                    >
+                      <SelectTrigger id="tournamentId">
+                        <SelectValue placeholder="Select tournament" />
+                      </SelectTrigger>
                       <SelectContent>
                         {tournaments.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.name}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -139,7 +212,9 @@ export default function NewClubSquadPage() {
                   <Input
                     id="season"
                     value={form.season}
-                    onChange={(e) => setForm((f) => ({ ...f, season: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, season: e.target.value }))
+                    }
                     placeholder="e.g. 2025/2026"
                   />
                 </div>
@@ -148,7 +223,13 @@ export default function NewClubSquadPage() {
                   <Button type="submit" disabled={saving}>
                     {saving ? "Creating..." : "Create Squad"}
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => router.back()}
+                  >
+                    Cancel
+                  </Button>
                 </div>
               </form>
             )}

@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { DashboardShell } from "@/components/layout/DashboardShell";
 import { DataTable, Column } from "@/components/ui/data-table";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { Team } from "@/types";
-import { Pencil } from "lucide-react";
 
 export default function TeamsPage() {
   const { profile } = useAuth();
@@ -46,18 +43,6 @@ export default function TeamsPage() {
     },
     { key: "ageGroup", header: "Age Group", sortable: true },
     { key: "division", header: "Division", sortable: true },
-    {
-      key: "actions",
-      header: "Actions",
-      cell: (row) => (
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/team/teams/${row.id}`}>
-            <Pencil className="h-3 w-3 mr-1" />
-            Edit
-          </Link>
-        </Button>
-      ),
-    },
   ];
 
   return (

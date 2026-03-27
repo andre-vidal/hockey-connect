@@ -82,14 +82,6 @@ export default function NewOfficialPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.userId) {
-      toast({ title: "Validation Error", description: "Please select a user.", variant: "destructive" });
-      return;
-    }
-    if (form.officialTypes.length === 0) {
-      toast({ title: "Validation Error", description: "Select at least one official type.", variant: "destructive" });
-      return;
-    }
     setSaving(true);
     try {
       const res = await fetch("/api/officials", {

@@ -34,7 +34,7 @@ tests/
 │   │   └── security.spec.ts       — 403 for league-admin endpoints; cross-club isolation
 │   │
 │   └── team_admin/                — user with the `team_admin` role (scoped to assigned teams)
-│       ├── teams.spec.ts          — Team edit (no create/delete); read-only team admin field
+│       ├── teams.spec.ts          — Team list view (read-only; assignment managed by club admin)
 │       ├── players.spec.ts        — Player roster view (read-only); status filter
 │       ├── squads.spec.ts         — Squad creation, player management, submit for approval
 │       └── security.spec.ts       — 403 for league/club-admin endpoints; cross-club isolation
@@ -146,6 +146,104 @@ Security coverage is split by actor:
 
 CRUD spec files focus on happy-path and validation flows only.
 
+## Table Action Column Standard
+
+Every list page that supports edit and/or delete renders an `actions` column in the `DataTable`. The structure is always the same:
+
+```tsx
+{
+  key: "actions",
+  header: "Actions",
+  cell: (row) => (
+    <div className="flex items-center gap-2">
+      {/* Only when edit is supported */}
+      <Button asChild variant="outline" size="sm">
+        <Link href={`/<section>/<resource>/${row.id}`}>
+          <Pencil className="h-3 w-3 mr-1" />
+          Edit
+        </Link>
+      </Button>
+
+      {/* Only when delete is supported */}
+      <Button variant="destructive" size="sm" onClick={() => setDeleteTarget(row)}>
+        <Trash2 className="h-3 w-3 mr-1" />
+        Delete
+      </Button>
+    </div>
+  ),
+},
+```
+
+**Delete confirmation modal** — all pages use the shared `Modal` component with inline state:
+
+```tsx
+const [deleteTarget, setDeleteTarget] = useState<Entity | null>(null);
+const [deleting, setDeleting] = useState(false);
+
+// In JSX:
+<Modal open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+  <ModalContent>
+    <ModalHeader><ModalTitle>Delete [Entity]</ModalTitle></ModalHeader>
+    <p className="text-sm text-gray-600 mt-2">
+      Are you sure you want to delete <strong>{deleteTarget?.name}</strong>? This action cannot be undone.
+    </p>
+    <ModalFooter>
+      <Button variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
+      <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+        {deleting ? "Deleting..." : "Delete [Entity]"}
+      </Button>
+    </ModalFooter>
+  </ModalContent>
+</Modal>
+```
+
+### Testing table actions
+
+**Testing edit navigation** — scope the row, then click Edit:
+
+```typescript
+const row = page.getByRole("row").filter({ hasText: name });
+await row.locator(sel.editButton).click();           // or use Link-based navigation
+await expect(page).toHaveURL(`/admin/leagues/${id}`);
+```
+
+**Testing delete with confirmation dialog** — always use a resource created via API in `try/finally`:
+
+```typescript
+const res = await page.request.post("/api/<resource>", { data: { ... } });
+const { <resource>: { id } } = await res.json();
+
+try {
+  await page.goto("/<section>/<resource>");
+  const row = page.getByRole("row").filter({ hasText: name });
+  await expect(row).toBeVisible({ timeout: 10_000 });
+
+  // Open the delete modal
+  await row.locator(sel.deleteButton).click();
+
+  // Confirm inside the modal
+  await page.locator(sel.confirmDeleteButton).click();
+
+  // Assert row is gone
+  await expect(row).not.toBeVisible({ timeout: 10_000 });
+} finally {
+  // Safety net: clean up even if delete failed mid-test
+  await page.request.delete(`/api/<resource>/${id}`).catch(() => {});
+}
+```
+
+**Selector conventions** — centralise all selectors in `helpers/selectors.ts`. Action column selectors follow this naming:
+
+| Selector key          | What it targets                                              |
+| --------------------- | ------------------------------------------------------------ |
+| `editButton`          | `'button:has-text("Edit")'` or link equivalent in the row   |
+| `deleteButton`        | `'button:has-text("Delete")'` (the row-level trigger)        |
+| `confirmDeleteButton` | `'button:has-text("Delete [Entity]")'` inside the modal      |
+
+> If the action uses different wording (e.g. "Remove" for officials), name the selector accordingly: `confirmRemoveButton`.
+
+**Do not test the cancel path** — dismissing the dialog and asserting the row still exists adds noise without meaningful coverage. Only test the confirm path.
+
 ## Test Patterns
 
 **API-based setup/teardown** — Rather than using the UI to create test data before every test, edit/delete tests create resources via the API within the test body and clean up in a `finally` block. This is faster and keeps tests independent.
@@ -186,16 +284,7 @@ await Promise.all(
 );
 ```
 
-**Form validation — disabled submit buttons** — Many forms programmatically disable the submit button when required fields are missing. Before writing a validation test that clicks the submit button and checks the URL, inspect the component to see if the button uses a `disabled` prop tied to the form state. If it does, assert `toBeDisabled()` instead of clicking:
-
-```typescript
-// Wrong — clicking a disabled button does nothing; the URL check passes vacuously
-await page.locator(sel.submitButton).click();
-await expect(page).toHaveURL(/\/club\/teams\/new/);
-
-// Correct — assert the button itself is disabled
-await expect(page.locator(sel.submitButton)).toBeDisabled();
-```
+**Form validation — native HTML5** — All `new` forms rely on native browser validation (`required` attributes) rather than JS-level guards and toasts. Do **not** write tests that check for validation errors on missing required fields — the browser prevents submission and the experience is consistent across all forms without needing spec coverage.
 
 **Scoping selectors to containers** — When the same text appears in more than one place, scope assertions to the container:
 

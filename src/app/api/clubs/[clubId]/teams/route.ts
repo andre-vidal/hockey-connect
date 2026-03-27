@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +98,14 @@ export async function POST(
     };
 
     await docRef.set(team);
+
+    // Sync teamIds on the assigned admin's profile
+    if (teamAdminId) {
+      await adminDb.collection("users").doc(teamAdminId).update({
+        teamIds: FieldValue.arrayUnion(docRef.id),
+      });
+    }
+
     return NextResponse.json({ team: { id: docRef.id, ...team } }, { status: 201 });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to create team";

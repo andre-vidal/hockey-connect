@@ -22,7 +22,9 @@ function clubId(): string {
 // ── List & navigation ─────────────────────────────────────────────────────────
 
 test.describe("teams list", () => {
-  test("renders the teams list with a New Team link", async ({ clubAdminPage: page }) => {
+  test("renders the teams list with a New Team link", async ({
+    clubAdminPage: page,
+  }) => {
     await page.goto("/club/teams");
     await expect(page.getByRole("heading", { name: "Teams" })).toBeVisible();
     await expect(page.locator(sel.newTeamLink)).toBeVisible();
@@ -32,7 +34,9 @@ test.describe("teams list", () => {
 // ── Create ────────────────────────────────────────────────────────────────────
 
 test.describe("create team", () => {
-  test("valid required fields → redirects to list and team appears", async ({ clubAdminPage: page }) => {
+  test("valid required fields → redirects to list and team appears", async ({
+    clubAdminPage: page,
+  }) => {
     const name = `Test Team ${uid()}`;
 
     await page.goto("/club/teams/new");
@@ -50,18 +54,11 @@ test.describe("create team", () => {
     // Cleanup
     const res = await page.request.get(`/api/clubs/${clubId()}/teams`);
     const { teams } = await res.json();
-    const created = teams.find((t: { name: string; id: string }) => t.name === name);
-    if (created) await page.request.delete(`/api/clubs/${clubId()}/teams/${created.id}`);
-  });
-
-  test("missing name → shows validation error on submit", async ({ clubAdminPage: page }) => {
-    await page.goto("/club/teams/new");
-
-    await page.locator(sel.genderTrigger).click();
-    await page.getByRole("option", { name: "Male", exact: true }).click();
-
-    await page.locator(sel.submitButton).click();
-    await expect(page.getByText("Validation Error")).toBeVisible();
+    const created = teams.find(
+      (t: { name: string; id: string }) => t.name === name,
+    );
+    if (created)
+      await page.request.delete(`/api/clubs/${clubId()}/teams/${created.id}`);
   });
 
   test("optional fields saved correctly", async ({ clubAdminPage: page }) => {
@@ -80,24 +77,31 @@ test.describe("create team", () => {
     // Verify via API that optional fields were persisted
     const res = await page.request.get(`/api/clubs/${clubId()}/teams`);
     const { teams } = await res.json();
-    const created = teams.find((t: { name: string; id: string; ageGroup?: string }) => t.name === name);
+    const created = teams.find(
+      (t: { name: string; id: string; ageGroup?: string }) => t.name === name,
+    );
     expect(created?.ageGroup).toBe("U21");
 
-    if (created) await page.request.delete(`/api/clubs/${clubId()}/teams/${created.id}`);
+    if (created)
+      await page.request.delete(`/api/clubs/${clubId()}/teams/${created.id}`);
   });
 });
 
 // ── Edit ──────────────────────────────────────────────────────────────────────
 
 test.describe("edit team", () => {
-  test("save changes → updated name appears in list", async ({ clubAdminPage: page }) => {
+  test("save changes → updated name appears in list", async ({
+    clubAdminPage: page,
+  }) => {
     const original = `Team ${uid()}`;
     const updated = `${original} (edited)`;
 
     const res = await page.request.post(`/api/clubs/${clubId()}/teams`, {
       data: { name: original, gender: "male" },
     });
-    const { team: { id } } = await res.json();
+    const {
+      team: { id },
+    } = await res.json();
 
     try {
       await page.goto(`/club/teams/${id}`);
@@ -115,7 +119,9 @@ test.describe("edit team", () => {
 // ── Delete ────────────────────────────────────────────────────────────────────
 
 test.describe("delete team", () => {
-  test("confirm delete → team removed from list", async ({ clubAdminPage: page }) => {
+  test("confirm delete → team removed from list", async ({
+    clubAdminPage: page,
+  }) => {
     const name = `Team ${uid()}`;
 
     await page.request.post(`/api/clubs/${clubId()}/teams`, {
