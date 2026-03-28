@@ -38,23 +38,27 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status"); // optional filter for admin
 
-    let query = adminDb.collection("articles").orderBy("publishedAt", "desc");
+    let query = adminDb.collection("articles") as FirebaseFirestore.Query;
 
     if (isAdmin) {
-      // Admin can filter by status
+      // Admin can filter by status; no orderBy to avoid composite index requirement
       if (status) {
-        query = adminDb.collection("articles").where("status", "==", status).orderBy("publishedAt", "desc");
+        query = adminDb.collection("articles").where("status", "==", status);
       }
     } else {
       // Non-admins only see published articles visible to their roles
-      query = adminDb
-        .collection("articles")
-        .where("status", "==", "published")
-        .orderBy("publishedAt", "desc");
+      query = adminDb.collection("articles").where("status", "==", "published");
     }
 
     const snapshot = await query.get();
-    let articles = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as unknown as Array<Record<string, unknown> & { visibility: UserRole[] }>;
+    let articles = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as unknown as Array<Record<string, unknown> & { visibility: UserRole[]; publishedAt: string | null; createdAt: string }>;
+
+    // Sort client-side: published articles by publishedAt desc, drafts by createdAt desc
+    articles.sort((a, b) => {
+      const aDate = a.publishedAt ?? a.createdAt ?? "";
+      const bDate = b.publishedAt ?? b.createdAt ?? "";
+      return bDate.localeCompare(aDate);
+    });
 
     // Filter by visibility (Firestore array-contains can only check one value, so filter client-side)
     if (!isAdmin) {
