@@ -6,7 +6,9 @@ import { DashboardShell } from "@/components/layout/DashboardShell";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Match, MatchStatus } from "@/types";
-import { Calendar, MapPin } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Calendar, MapPin, Radio, ClipboardList } from "lucide-react";
 
 const statusVariant: Record<MatchStatus, "secondary" | "success" | "default" | "outline" | "warning"> = {
   scheduled: "secondary",
@@ -84,6 +86,33 @@ function OfficialMatchesContent() {
           <span className="capitalize">{row.status as string}</span>
         </Badge>
       ),
+    },
+    {
+      key: "liveActions",
+      header: "Actions",
+      cell: (row) => {
+        const status = row.status as MatchStatus;
+        return (
+          <div className="flex items-center gap-2">
+            {(status === "scheduled" || status === "warmup" || status === "live") && (
+              <Button asChild size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                <Link href={`/official/match/${row.id}/live`}>
+                  <Radio className="h-3 w-3 mr-1" />
+                  {status === "scheduled" ? "Start" : "Go Live"}
+                </Link>
+              </Button>
+            )}
+            {(status === "completed" || status === "confirmed") && (
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/official/match/${row.id}/card`}>
+                  <ClipboardList className="h-3 w-3 mr-1" />
+                  View Card
+                </Link>
+              </Button>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "officials",
