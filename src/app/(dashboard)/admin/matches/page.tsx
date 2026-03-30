@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter } from "@/components/ui/modal";
 import { useToast } from "@/hooks/useToast";
 import { Match, MatchStatus } from "@/types";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ClipboardList } from "lucide-react";
 
 const statusVariant: Record<MatchStatus, "secondary" | "success" | "default" | "outline" | "warning" | "destructive"> = {
   scheduled: "secondary",
@@ -105,6 +105,14 @@ export default function AdminMatchesPage() {
               Edit
             </Link>
           </Button>
+          {((row.status as MatchStatus) === "completed" || (row.status as MatchStatus) === "confirmed") && (
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/admin/matches/${row.id}/card`}>
+                <ClipboardList className="h-3 w-3 mr-1" />
+                View Card
+              </Link>
+            </Button>
+          )}
           {(row.status as MatchStatus) === "scheduled" && (
             <Button
               variant="destructive"

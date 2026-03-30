@@ -260,6 +260,192 @@ export interface Match {
   createdBy: string;
 }
 
+// Phase 5: Live Match Engine
+
+export type LiveMatchStatus = "warmup" | "live" | "stoppage" | "interval_break" | "completed";
+
+export type MatchEventType =
+  | "goal"
+  | "green_card"
+  | "yellow_card"
+  | "red_card"
+  | "penalty_corner"
+  | "penalty_stroke"
+  | "substitution"
+  | "stoppage_start"
+  | "stoppage_end"
+  | "interval_end"
+  | "match_end"
+  | "shot_on_goal"
+  | "shot_off_goal"
+  | "free_hit"
+  | "long_corner"
+  | "turnover"
+  | "aerial"
+  | "tackle"
+  | "interception"
+  | "circle_entry";
+
+export type CardType = "green" | "yellow" | "red";
+export type StoppageReason = "penalty_corner" | "injury" | "video_referral" | "other";
+
+export interface LiveMatchEvent {
+  id: string;
+  type: MatchEventType;
+  intervalNumber: number;
+  matchTimeMs: number;
+  teamId?: string;
+  teamSide?: "home" | "away";
+  playerId?: string;
+  playerName?: string;
+  playerJersey?: number;
+  secondaryPlayerId?: string;
+  secondaryPlayerName?: string;
+  cardType?: CardType;
+  penaltyDurationMs?: number;
+  stoppageReason?: StoppageReason;
+  stoppageDurationMs?: number;
+  notes?: string;
+  createdAt: number; // ms timestamp
+  createdBy: string;
+  editedAt?: number;
+  editedBy?: string;
+}
+
+export interface ActivePenalty {
+  id: string;
+  playerId: string;
+  playerName: string;
+  playerJersey?: number;
+  teamId: string;
+  teamSide: "home" | "away";
+  cardType: "green" | "yellow";
+  totalDurationMs: number;
+  elapsedMs: number;
+  startedAt: number | null;
+  isRunning: boolean;
+  eventId: string;
+}
+
+export interface LiveMatchState {
+  status: LiveMatchStatus;
+  currentInterval: number;
+  intervalElapsedMs: number;
+  intervalStartedAt: number | null;
+  isRunning: boolean;
+  stoppageStartedAt: number | null;
+  stoppageReason: StoppageReason | null;
+  score: { home: number; away: number };
+  lastUpdatedBy: string;
+  lastUpdatedAt: number;
+}
+
+export interface LiveMatchData {
+  state: LiveMatchState | null;
+  events: LiveMatchEvent[];
+  activePenalties: ActivePenalty[];
+}
+
+export type MatchCardStatus = "pending_review" | "confirmed" | "disputed" | "resolved";
+
+export interface MatchCardEvent {
+  eventId: string;
+  type: MatchEventType;
+  intervalNumber: number;
+  matchTimeMs: number;
+  teamId?: string;
+  teamSide?: "home" | "away";
+  playerId?: string;
+  playerName?: string;
+  playerJersey?: number;
+  secondaryPlayerId?: string;
+  secondaryPlayerName?: string;
+  cardType?: CardType;
+  stoppageDurationMs?: number;
+  notes?: string;
+  disputed?: boolean;
+  disputeComment?: string;
+}
+
+export interface MatchCard {
+  id: string; // = matchId
+  matchId: string;
+  homeTeamId: string;
+  homeTeamName: string;
+  homeClubId: string;
+  awayTeamId: string;
+  awayTeamName: string;
+  awayClubId: string;
+  finalScore: { home: number; away: number };
+  events: MatchCardEvent[];
+  status: MatchCardStatus;
+  homeTeamConfirmedAt?: string;
+  homeTeamConfirmedBy?: string;
+  awayTeamConfirmedAt?: string;
+  awayTeamConfirmedBy?: string;
+  disputedAt?: string;
+  disputedBy?: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+  resolutionNotes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlayerMatchStats {
+  playerId: string;
+  playerName: string;
+  teamId: string;
+  teamSide: "home" | "away";
+  goals: number;
+  assists: number;
+  penaltyCorners: number;
+  penaltyStrokes: number;
+  greenCards: number;
+  yellowCards: number;
+  redCards: number;
+  saves: number;
+  tackles: number;
+  interceptions: number;
+  circleEntries: number;
+  shotsOnGoal: number;
+  shotsOffGoal: number;
+  freeHits: number;
+  longCorners: number;
+  turnovers: number;
+  aerials: number;
+  minutesPlayed: number;
+}
+
+export interface TeamMatchStats {
+  teamId: string;
+  teamSide: "home" | "away";
+  goals: number;
+  penaltyCorners: number;
+  penaltyStrokes: number;
+  shotsOnGoal: number;
+  shotsOffGoal: number;
+  greenCards: number;
+  yellowCards: number;
+  redCards: number;
+  circleEntries: number;
+  freeHits: number;
+  longCorners: number;
+  turnovers: number;
+}
+
+export interface MatchStats {
+  id: string; // = matchId
+  matchId: string;
+  leagueId?: string;
+  tournamentId?: string;
+  homeTeamStats: TeamMatchStats;
+  awayTeamStats: TeamMatchStats;
+  playerStats: PlayerMatchStats[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Phase 6: Articles & CMS
 
 export type ArticleStatus = "draft" | "published" | "archived";
