@@ -8,9 +8,11 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("unauthenticated — leagues API", () => {
-  test("GET /api/leagues → 401", async ({ page }) => {
+  test("GET /api/leagues → 200 (public read)", async ({ page }) => {
     const res = await page.request.get("/api/leagues");
-    expect(res.status()).toBe(401);
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.leagues)).toBe(true);
   });
 
   test("POST /api/leagues → 401", async ({ page }) => {

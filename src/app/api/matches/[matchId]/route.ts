@@ -24,7 +24,6 @@ export async function GET(
   { params }: { params: Promise<{ matchId: string }> }
 ) {
   try {
-    await verifyAuthenticated();
     const { matchId } = await params;
     const doc = await adminDb.collection("matches").doc(matchId).get();
     if (!doc.exists) {
@@ -33,8 +32,7 @@ export async function GET(
     return NextResponse.json({ match: { id: doc.id, ...doc.data() } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch match";
-    const status = message === "Unauthorized" ? 401 : 500;
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

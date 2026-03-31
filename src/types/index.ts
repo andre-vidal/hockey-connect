@@ -446,6 +446,57 @@ export interface MatchStats {
   updatedAt: string;
 }
 
+// Phase 7: Public Stats & League Tables
+
+export interface LeagueStanding {
+  id: string; // = `${leagueId}_${teamId}`
+  leagueId: string;
+  teamId: string;
+  teamName?: string;
+  clubId?: string;
+  clubName?: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  points: number;
+  /** Last 5 match results: 'W', 'D', 'L' */
+  form?: string[];
+  updatedAt: string;
+}
+
+export interface PlayerSeasonStats {
+  playerId: string;
+  playerName: string;
+  teamId: string;
+  teamName?: string;
+  clubId?: string;
+  clubName?: string;
+  leagueId?: string;
+  matchesPlayed: number;
+  goals: number;
+  assists: number;
+  penaltyCorners: number;
+  penaltyStrokes: number;
+  greenCards: number;
+  yellowCards: number;
+  redCards: number;
+  saves: number;
+  tackles: number;
+  interceptions: number;
+  circleEntries: number;
+  shotsOnGoal: number;
+  shotsOffGoal: number;
+  freeHits: number;
+  longCorners: number;
+  turnovers: number;
+  aerials: number;
+  minutesPlayed: number;
+}
+
 // Phase 6: Articles & CMS
 
 export type ArticleStatus = "draft" | "published" | "archived";

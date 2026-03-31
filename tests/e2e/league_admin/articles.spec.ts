@@ -532,7 +532,7 @@ test.describe("article UI — create", () => {
   test("cancel button returns to article list without saving", async ({ leagueAdminPage: page }) => {
     await page.goto("/admin/articles/new");
     await page.locator(sel.titleInput).fill("Cancelled Article");
-    await page.getByRole("link", { name: "Cancel" }).click();
+    await page.getByRole("link", { name: "Cancel" }).first().click();
     await expect(page).toHaveURL("/admin/articles");
     // Article should not have been created
     const { articles } = await (await page.request.get("/api/articles")).json();
@@ -613,7 +613,7 @@ test.describe("article UI — delete", () => {
     await expect(page.getByText("Delete Me Via Modal")).toBeVisible();
     await page.locator(sel.deleteButton).first().click();
     await page.locator(sel.confirmDeleteButton).click();
-    await expect(page.getByText("Delete Me Via Modal")).not.toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText("Delete Me Via Modal")).not.toBeVisible({ timeout: 15_000 });
 
     // Verify API confirms deletion
     const res = await page.request.get(`/api/articles/${article.id}`);

@@ -3,7 +3,7 @@ import { test as authTest } from "../../fixtures/auth";
 import { seedMatchFixtures, seedMatch, cleanupMatchFixtures } from "../../helpers/matches";
 
 /**
- * Public — Match listing and calendar (Phase 4)
+ * Public — Match listing, calendar, match result pages, match stats API (Phase 4 + Phase 7)
  *
  * Covers:
  *   - /matches page accessible without authentication
@@ -11,6 +11,8 @@ import { seedMatchFixtures, seedMatch, cleanupMatchFixtures } from "../../helper
  *   - Unauthenticated API requests are rejected with 401
  *   - A created match is visible on the public matches page
  *   - Calendar renders with month/list toggle
+ *   - /matches/[matchId] result page — score card, status badge, Watch Live link, stats section
+ *   - GET /api/matches/[matchId]/stats — public access, 404 when no stats exist
  */
 
 // ── Public page access (no auth required) ─────────────────────────────────────
@@ -163,5 +165,161 @@ test.describe("unauthenticated API access", () => {
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(Array.isArray(body.matches)).toBe(true);
+  });
+});
+
+// ── GET /api/matches/[matchId]/stats ──────────────────────────────────────────
+
+test.describe("GET /api/matches/[matchId]/stats — public access", () => {
+  test("returns 404 for a nonexistent match ID", async ({ page }) => {
+    const res = await page.request.get("/api/matches/nonexistent-match-id/stats");
+    expect(res.status()).toBe(404);
+  });
+});
+
+authTest.describe("GET /api/matches/[matchId]/stats — match without stats", () => {
+  authTest("returns 404 for a match that has not been finalized", async ({
+    leagueAdminPage: adminPage,
+    page,
+  }) => {
+    const fx = await seedMatchFixtures(adminPage.request);
+    const match = await seedMatch(adminPage.request, fx);
+    try {
+      const res = await page.request.get(`/api/matches/${match.id}/stats`);
+      expect(res.status()).toBe(404);
+    } finally {
+      await cleanupMatchFixtures(adminPage.request, fx, [match.id as string]);
+    }
+  });
+
+  authTest("is accessible without authentication (returns 404, not 401 or 403)", async ({
+    leagueAdminPage: adminPage,
+    browser,
+  }) => {
+    const fx = await seedMatchFixtures(adminPage.request);
+    const match = await seedMatch(adminPage.request, fx);
+    const ctx = await browser.newContext();
+    try {
+      const res = await ctx.request.get(`/api/matches/${match.id}/stats`);
+      expect([404]).toContain(res.status());
+    } finally {
+      await ctx.close();
+      await cleanupMatchFixtures(adminPage.request, fx, [match.id as string]);
+    }
+  });
+});
+
+// ── /matches/[matchId] result page ────────────────────────────────────────────
+
+test.describe("match result page — not found", () => {
+  test("shows not-found message for a nonexistent match ID", async ({ page }) => {
+    await page.goto("/matches/nonexistent-match-xyz");
+    await expect(page.getByText("Match not found.")).toBeVisible({ timeout: 10_000 });
+  });
+});
+
+authTest.describe("match result page — content", () => {
+  authTest("shows both team names and venue for a scheduled match", async ({
+    leagueAdminPage: adminPage,
+    page,
+  }) => {
+    const fx = await seedMatchFixtures(adminPage.request);
+    const match = await seedMatch(adminPage.request, fx, { venue: "Result Page Venue" });
+    try {
+      await page.goto(`/matches/${match.id}`);
+      await expect(page.getByText(fx.team1.name)).toBeVisible({ timeout: 10_000 });
+      await expect(page.getByText(fx.team2.name)).toBeVisible();
+      await expect(page.getByText("Result Page Venue")).toBeVisible();
+    } finally {
+      await cleanupMatchFixtures(adminPage.request, fx, [match.id as string]);
+    }
+  });
+
+  authTest("shows the match status badge", async ({
+    leagueAdminPage: adminPage,
+    page,
+  }) => {
+    const fx = await seedMatchFixtures(adminPage.request);
+    const match = await seedMatch(adminPage.request, fx);
+    try {
+      await page.goto(`/matches/${match.id}`);
+      await expect(page.getByText("scheduled", { exact: false })).toBeVisible({ timeout: 10_000 });
+    } finally {
+      await cleanupMatchFixtures(adminPage.request, fx, [match.id as string]);
+    }
+  });
+
+  authTest("shows 'Watch Live' link for a live match", async ({
+    leagueAdminPage: adminPage,
+    page,
+  }) => {
+    const fx = await seedMatchFixtures(adminPage.request);
+    const match = await seedMatch(adminPage.request, fx, { status: "live" });
+    try {
+      await page.goto(`/matches/${match.id}`);
+      await expect(page.getByRole("link", { name: /Watch Live/i })).toBeVisible({ timeout: 10_000 });
+    } finally {
+      await cleanupMatchFixtures(adminPage.request, fx, [match.id as string]);
+    }
+  });
+
+  authTest("does not show 'Watch Live' link for a completed match", async ({
+    leagueAdminPage: adminPage,
+    page,
+  }) => {
+    const fx = await seedMatchFixtures(adminPage.request);
+    const match = await seedMatch(adminPage.request, fx, { status: "completed" });
+    try {
+      await page.goto(`/matches/${match.id}`);
+      await expect(page.getByRole("link", { name: /Watch Live/i })).not.toBeVisible({ timeout: 10_000 });
+    } finally {
+      await cleanupMatchFixtures(adminPage.request, fx, [match.id as string]);
+    }
+  });
+
+  authTest("shows 'Statistics not yet available.' for completed match with no stats", async ({
+    leagueAdminPage: adminPage,
+    page,
+  }) => {
+    const fx = await seedMatchFixtures(adminPage.request);
+    const match = await seedMatch(adminPage.request, fx, { status: "completed" });
+    try {
+      await page.goto(`/matches/${match.id}`);
+      await expect(page.getByText("Statistics not yet available.")).toBeVisible({ timeout: 10_000 });
+    } finally {
+      await cleanupMatchFixtures(adminPage.request, fx, [match.id as string]);
+    }
+  });
+
+  authTest("Back link navigates to /matches listing", async ({
+    leagueAdminPage: adminPage,
+    page,
+  }) => {
+    const fx = await seedMatchFixtures(adminPage.request);
+    const match = await seedMatch(adminPage.request, fx);
+    try {
+      await page.goto(`/matches/${match.id}`);
+      await page.getByRole("link", { name: "All Matches" }).click();
+      await expect(page).toHaveURL("/matches");
+    } finally {
+      await cleanupMatchFixtures(adminPage.request, fx, [match.id as string]);
+    }
+  });
+
+  authTest("is accessible without authentication", async ({
+    leagueAdminPage: adminPage,
+    browser,
+  }) => {
+    const fx = await seedMatchFixtures(adminPage.request);
+    const match = await seedMatch(adminPage.request, fx);
+    const ctx = await browser.newContext();
+    const p = await ctx.newPage();
+    try {
+      await p.goto(`/matches/${match.id}`);
+      await expect(p.getByText(fx.team1.name)).toBeVisible({ timeout: 10_000 });
+    } finally {
+      await ctx.close();
+      await cleanupMatchFixtures(adminPage.request, fx, [match.id as string]);
+    }
   });
 });

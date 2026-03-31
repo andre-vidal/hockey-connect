@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Shield } from "lucide-react";
+import { GlobalSearch } from "@/components/stats/GlobalSearch";
 
 export function Header() {
   const { user, profile } = useAuth();
@@ -72,10 +73,15 @@ export function Header() {
           <Link href="/matches" className="hover:text-gray-900">
             Matches
           </Link>
+          <Link href="/stats" className="hover:text-gray-900">
+            Stats
+          </Link>
           <Link href="/articles" className="hover:text-gray-900">
             News
           </Link>
         </nav>
+
+        <GlobalSearch className="hidden md:block w-56 lg:w-72" />
 
         <div className="flex items-center gap-3">
           {user && !user.isAnonymous ? (

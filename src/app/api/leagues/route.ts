@@ -21,17 +21,14 @@ async function verifyLeagueAdmin() {
 
 export async function GET() {
   try {
-    await verifyAuthenticated();
-    const snapshot = await adminDb
-      .collection("leagues")
-      .orderBy("createdAt", "desc")
-      .get();
-    const leagues = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const snapshot = await adminDb.collection("leagues").orderBy("createdAt", "desc").get();
+    const leagues = snapshot.docs
+      .map((doc) => ({ id: doc.id, ...doc.data() }))
+      .filter((l) => (l as { status?: string }).status !== "archived");
     return NextResponse.json({ leagues });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch leagues";
-    const status = message === "Unauthorized" ? 401 : 500;
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
