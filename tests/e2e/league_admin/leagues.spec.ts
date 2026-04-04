@@ -78,18 +78,24 @@ test.describe("edit league", () => {
 test.describe("delete league", () => {
   test("confirm delete → league removed from list", async ({ leagueAdminPage: page }) => {
     const name = `League ${uid()}`;
-    await page.request.post("/api/leagues", {
+    const res = await page.request.post("/api/leagues", {
       data: { name, country: "Testland", gender: "female" },
     });
+    const { league: { id } } = await res.json();
 
-    await page.goto("/admin/leagues");
+    try {
+      await page.goto("/admin/leagues");
 
-    const row = page.getByRole("row").filter({ hasText: name });
-    await expect(row).toBeVisible({ timeout: 10_000 });
-    await row.locator(sel.deleteButton).click();
-    await page.locator(sel.confirmDeleteButton).click();
+      const row = page.getByRole("row").filter({ hasText: name });
+      await expect(row).toBeVisible({ timeout: 10_000 });
+      await row.locator(sel.deleteButton).click();
+      await page.locator(sel.confirmDeleteButton).click();
 
-    await expect(row).not.toBeVisible({ timeout: 10_000 });
+      await expect(row).not.toBeVisible({ timeout: 10_000 });
+    } finally {
+      // Fallback: delete via API in case the UI delete did not complete
+      await page.request.delete(`/api/leagues/${id}`).catch(() => {});
+    }
   });
 });
 

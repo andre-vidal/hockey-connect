@@ -74,30 +74,34 @@ test.describe("create squad", () => {
     const team = await getAssignedTeam(page);
     if (!team) test.skip(true, "No teams assigned to TEAM_ADMIN");
 
-    await page.goto("/team/squads/new");
+    let squadId: string | undefined;
+    try {
+      await page.goto("/team/squads/new");
 
-    await page.locator(sel.teamTrigger).click();
-    await page.getByRole("option", { name: team!.name, exact: true }).click();
+      await page.locator(sel.teamTrigger).click();
+      await page.getByRole("option", { name: team!.name, exact: true }).click();
 
-    await page
-      .locator("form")
-      .getByRole("button", { name: "League", exact: true })
-      .click();
-    await page.locator(sel.leagueTrigger).click();
-    await page
-      .getByRole("option", { name: "Demo League (Open)", exact: true })
-      .click();
+      await page
+        .locator("form")
+        .getByRole("button", { name: "League", exact: true })
+        .click();
+      await page.locator(sel.leagueTrigger).click();
+      await page
+        .getByRole("option", { name: "Demo League (Open)", exact: true })
+        .click();
 
-    await page.locator(sel.seasonInput).fill("2025/2026");
-    await page.locator(sel.submitButton).click();
+      await page.locator(sel.seasonInput).fill("2025/2026");
+      await page.locator(sel.submitButton).click();
 
-    await expect(page).toHaveURL(/\/team\/squads\/[^/]+$/, { timeout: 10_000 });
-    await expect(
-      page.getByRole("heading", { name: "Squad Management" }),
-    ).toBeVisible();
+      await expect(page).toHaveURL(/\/team\/squads\/[^/]+$/, { timeout: 10_000 });
+      await expect(
+        page.getByRole("heading", { name: "Squad Management" }),
+      ).toBeVisible();
 
-    const squadId = page.url().split("/").pop()!;
-    await page.request.delete(`/api/squads/${squadId}`);
+      squadId = page.url().split("/").pop()!;
+    } finally {
+      if (squadId) await page.request.delete(`/api/squads/${squadId}`).catch(() => {});
+    }
   });
 });
 

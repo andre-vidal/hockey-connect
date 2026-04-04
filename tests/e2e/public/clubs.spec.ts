@@ -33,7 +33,7 @@ authTest.describe("clubs listing page — data visibility", () => {
       await page.goto("/clubs");
       await expect(page.getByText(uniqueName)).toBeVisible({ timeout: 10_000 });
     } finally {
-      await adminPage.request.patch(`/api/clubs/${club.id}`, { data: { isArchived: true } });
+      await adminPage.request.delete(`/api/clubs/${club.id}`);
     }
   });
 
@@ -46,8 +46,12 @@ authTest.describe("clubs listing page — data visibility", () => {
       data: { name: uniqueName, country: "Testland" },
     });
     const { club } = await res.json();
-    await adminPage.request.patch(`/api/clubs/${club.id}`, { data: { isArchived: true } });
-    await page.goto("/clubs");
-    await expect(page.getByText(uniqueName)).not.toBeVisible({ timeout: 5_000 });
+    try {
+      await adminPage.request.patch(`/api/clubs/${club.id}`, { data: { isArchived: true } });
+      await page.goto("/clubs");
+      await expect(page.getByText(uniqueName)).not.toBeVisible({ timeout: 5_000 });
+    } finally {
+      await adminPage.request.delete(`/api/clubs/${club.id}`);
+    }
   });
 });

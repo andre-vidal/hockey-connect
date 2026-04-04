@@ -74,20 +74,24 @@ test.describe("create club", () => {
     leagueAdminPage: page,
   }) => {
     const name = `Test Club ${uid()}`;
-    await page.goto("/admin/clubs/new", { timeout: 15_000 });
-    await page.locator(sel.nameInput).fill(name);
-    await page.locator(sel.submitButton).click();
+    let createdId: string | undefined;
+    try {
+      await page.goto("/admin/clubs/new", { timeout: 15_000 });
+      await page.locator(sel.nameInput).fill(name);
+      await page.locator(sel.submitButton).click();
 
-    await expect(page).toHaveURL("/admin/clubs", { timeout: 15_000 });
-    await expect(page.getByText(name, { exact: true })).toBeVisible();
+      await expect(page).toHaveURL("/admin/clubs", { timeout: 15_000 });
+      await expect(page.getByText(name, { exact: true })).toBeVisible();
 
-    // Cleanup
-    const res = await page.request.get("/api/clubs?includeArchived=true");
-    const { clubs } = await res.json();
-    const created = clubs.find(
-      (c: { name: string; id: string }) => c.name === name,
-    );
-    if (created) await page.request.delete(`/api/clubs/${created.id}`);
+      const res = await page.request.get("/api/clubs?includeArchived=true");
+      const { clubs } = await res.json();
+      const created = clubs.find(
+        (c: { name: string; id: string }) => c.name === name,
+      );
+      createdId = created?.id;
+    } finally {
+      if (createdId) await page.request.delete(`/api/clubs/${createdId}`).catch(() => {});
+    }
   });
 
   test("logo upload → preview appears before submission", async ({
@@ -110,30 +114,34 @@ test.describe("create club", () => {
     leagueAdminPage: page,
   }) => {
     const name = `Logo Club ${uid()}`;
-    await page.goto("/admin/clubs/new");
-    await page.locator(sel.nameInput).fill(name);
+    let createdId: string | undefined;
+    try {
+      await page.goto("/admin/clubs/new");
+      await page.locator(sel.nameInput).fill(name);
 
-    const logoPath = path.resolve(
-      __dirname,
-      "../../fixtures/assets/test-logo.png",
-    );
-    await page.locator(sel.logoInput).setInputFiles(logoPath);
+      const logoPath = path.resolve(
+        __dirname,
+        "../../fixtures/assets/test-logo.png",
+      );
+      await page.locator(sel.logoInput).setInputFiles(logoPath);
 
-    await expect(page.locator('img[alt="Logo preview"]')).toBeVisible();
+      await expect(page.locator('img[alt="Logo preview"]')).toBeVisible();
 
-    await page.locator(sel.submitButton).click();
-    await expect(page).toHaveURL("/admin/clubs", { timeout: 30_000 });
-    await expect(page.getByText(name, { exact: true })).toBeVisible();
+      await page.locator(sel.submitButton).click();
+      await expect(page).toHaveURL("/admin/clubs", { timeout: 30_000 });
+      await expect(page.getByText(name, { exact: true })).toBeVisible();
 
-    // Verify the saved club has a logoUrl via the API
-    const listRes = await page.request.get("/api/clubs");
-    const { clubs } = await listRes.json();
-    const created = clubs.find(
-      (c: { name: string; id: string; logoUrl?: string }) => c.name === name,
-    );
-    expect(created?.logoUrl).toBeTruthy();
-
-    if (created) await page.request.delete(`/api/clubs/${created.id}`);
+      // Verify the saved club has a logoUrl via the API
+      const listRes = await page.request.get("/api/clubs");
+      const { clubs } = await listRes.json();
+      const created = clubs.find(
+        (c: { name: string; id: string; logoUrl?: string }) => c.name === name,
+      );
+      createdId = created?.id;
+      expect(created?.logoUrl).toBeTruthy();
+    } finally {
+      if (createdId) await page.request.delete(`/api/clubs/${createdId}`).catch(() => {});
+    }
   });
 });
 

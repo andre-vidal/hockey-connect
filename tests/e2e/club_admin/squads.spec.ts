@@ -66,6 +66,7 @@ test.describe("create squad", () => {
       data: { name: `Squad Team ${uid()}`, gender: "male" },
     });
     const { team } = await teamRes.json();
+    let squadId: string | undefined;
 
     try {
       await page.goto("/club/squads/new");
@@ -96,10 +97,10 @@ test.describe("create squad", () => {
       ).toBeVisible();
 
       // Extract the squad ID from the URL for cleanup
-      const squadId = page.url().split("/").pop()!;
-      await page.request.delete(`/api/squads/${squadId}`);
+      squadId = page.url().split("/").pop()!;
     } finally {
-      await page.request.delete(`/api/clubs/${clubId()}/teams/${team.id}`);
+      if (squadId) await page.request.delete(`/api/squads/${squadId}`).catch(() => {});
+      await page.request.delete(`/api/clubs/${clubId()}/teams/${team.id}`).catch(() => {});
     }
   });
 });
