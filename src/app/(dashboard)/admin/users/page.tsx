@@ -26,7 +26,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/useToast";
 import { useRole } from "@/hooks/useRole";
 import { UserProfile, Club, UserRole } from "@/types";
-import { UserPlus, Pencil } from "lucide-react";
+import { UserPlus, Pencil, Trash2 } from "lucide-react";
 
 const ALL_ROLES: UserRole[] = [
   "root",
@@ -91,6 +91,10 @@ export default function UsersPage() {
   });
   const [inviting, setInviting] = useState(false);
 
+  // Delete modal
+  const [deleteTarget, setDeleteTarget] = useState<UserProfile | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   // Edit modal
   const [editTarget, setEditTarget] = useState<UserProfile | null>(null);
   const [editForm, setEditForm] = useState<EditForm>({
@@ -130,6 +134,30 @@ export default function UsersPage() {
         ? f.roles.filter((r) => r !== role)
         : [...f.roles, role],
     }));
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/users/${deleteTarget.uid}`, { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to delete user");
+      setUsers((prev) => prev.filter((u) => u.uid !== deleteTarget.uid));
+      toast({
+        title: "User deleted",
+        description: `${deleteTarget.displayName || deleteTarget.email} has been deleted.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to delete user",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
+    }
   }
 
   const handleSave = useCallback(async () => {
@@ -272,14 +300,26 @@ export default function UsersPage() {
       cell: (row) => {
         const user = row as unknown as UserProfile;
         return (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => openEdit(user)}
-            title="Edit user"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => openEdit(user)}
+              title="Edit user"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            {(isLeagueAdmin || isRoot) && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setDeleteTarget(user)}
+                title="Delete user"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         );
       },
     },
@@ -415,6 +455,42 @@ export default function UsersPage() {
               </Button>
               <Button onClick={handleSave} disabled={saving}>
                 {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          open={!!deleteTarget}
+          onOpenChange={(open) => {
+            if (!open) setDeleteTarget(null);
+          }}
+        >
+          <ModalContent>
+            <ModalHeader>
+              <ModalTitle>Delete User</ModalTitle>
+            </ModalHeader>
+            <p className="text-sm text-gray-600 mt-2">
+              Are you sure you want to delete{" "}
+              <strong>
+                {deleteTarget?.displayName || deleteTarget?.email}
+              </strong>
+              ? This will permanently remove their account and cannot be undone.
+            </p>
+            <ModalFooter>
+              <Button
+                variant="outline"
+                onClick={() => setDeleteTarget(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete User"}
               </Button>
             </ModalFooter>
           </ModalContent>

@@ -95,3 +95,44 @@ export async function PUT(
     return NextResponse.json({ error: message }, { status });
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ uid: string }> }
+) {
+  try {
+    const { callerUid, roles: callerRoles } = await verifyAuth();
+    const isLeagueAdmin = callerRoles.includes("league_admin") || callerRoles.includes("root");
+    if (!isLeagueAdmin) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { uid } = await params;
+
+    if (callerUid === uid) {
+      return NextResponse.json({ error: "Cannot delete your own account" }, { status: 400 });
+    }
+
+    const doc = await adminDb.collection("users").doc(uid).get();
+    if (!doc.exists) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const targetRoles: string[] = doc.data()?.roles ?? [];
+    const callerLvl = minLevel(callerRoles);
+    const targetLvl = minLevel(targetRoles);
+
+    if (targetLvl < callerLvl) {
+      return NextResponse.json({ error: "Cannot delete a user with higher privilege" }, { status: 403 });
+    }
+
+    await adminAuth.deleteUser(uid);
+    await adminDb.collection("users").doc(uid).delete();
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to delete user";
+    const status = message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 500;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
