@@ -29,36 +29,38 @@ export default function ClubsPage() {
           {!loading && clubs.length === 0 && (
             <p className="text-sm text-gray-500">No clubs found.</p>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {clubs.map((club) => (
               <div
                 key={club.id}
-                className="bg-white rounded-lg border border-gray-200 p-4 flex items-start gap-3"
+                className="bg-white rounded-lg border border-gray-200 p-4 flex flex-col items-center text-center gap-3"
               >
                 {club.logoUrl ? (
                   <Image
                     src={club.logoUrl}
                     alt={club.name}
-                    width={48}
-                    height={48}
+                    width={128}
+                    height={128}
                     className="rounded-full object-cover shrink-0"
                   />
                 ) : (
                   <div
-                    className="h-12 w-12 rounded-full flex items-center justify-center text-white font-bold text-lg shrink-0"
+                    className="h-16 w-16 rounded-full flex items-center justify-center text-white font-bold text-xl shrink-0"
                     style={{ backgroundColor: club.primaryColor || "#16a34a" }}
                   >
                     {club.shortName?.[0] ?? club.name[0]}
                   </div>
                 )}
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-gray-900 text-sm">{club.name}</h3>
+                <div className="min-w-0 w-full">
+                  <h3 className="font-semibold text-gray-900 text-sm">
+                    {club.name}
+                  </h3>
                   {club.shortName && (
                     <p className="text-xs text-gray-400">{club.shortName}</p>
                   )}
                   <div className="mt-1 space-y-0.5">
                     {(club.city || club.country) && (
-                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <p className="text-xs text-gray-500 flex items-center justify-center gap-1">
                         <MapPin className="h-3 w-3" />
                         {[club.city, club.country].filter(Boolean).join(", ")}
                       </p>
@@ -68,7 +70,7 @@ export default function ClubsPage() {
                         href={club.website}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-primary-600 hover:underline flex items-center gap-1"
+                        className="text-xs text-primary-600 hover:underline flex items-center justify-center gap-1"
                       >
                         <Globe className="h-3 w-3" />
                         Website

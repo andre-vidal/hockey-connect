@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { adminAuth, adminDb, adminRtdb } from "@/lib/firebase/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +107,10 @@ export async function DELETE(
     }
 
     await adminDb.collection("matches").doc(matchId).delete();
+
+    // Clean up RTDB live state if it was initialized during warmup
+    await adminRtdb.ref(`/liveMatches/${matchId}`).remove();
+
     return NextResponse.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to delete match";

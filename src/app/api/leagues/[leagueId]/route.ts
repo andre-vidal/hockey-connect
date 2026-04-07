@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { adminAuth, adminDb, getAdminDb } from "@/lib/firebase/admin";
+import { deleteCollection } from "@/lib/firestoreUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -73,6 +74,20 @@ export async function DELETE(
     const doc = await adminDb.collection("leagues").doc(leagueId).get();
     if (!doc.exists) {
       return NextResponse.json({ error: "League not found" }, { status: 404 });
+    }
+
+    // Delete seasons subcollection
+    await deleteCollection(adminDb.collection(`leagues/${leagueId}/seasons`));
+
+    // Delete leagueStandings referencing this league
+    const standingsSnap = await adminDb
+      .collection("leagueStandings")
+      .where("leagueId", "==", leagueId)
+      .get();
+    if (!standingsSnap.empty) {
+      const batch = getAdminDb().batch();
+      standingsSnap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
     }
 
     await adminDb.collection("leagues").doc(leagueId).delete();

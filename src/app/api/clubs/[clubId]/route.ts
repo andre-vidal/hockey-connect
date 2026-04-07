@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { adminAuth, adminDb } from "@/lib/firebase/admin";
+import { adminAuth, adminDb, getAdminDb } from "@/lib/firebase/admin";
+import { deleteCollection } from "@/lib/firestoreUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +81,29 @@ export async function DELETE(
       return NextResponse.json({ error: "Club not found" }, { status: 404 });
     }
 
+    // 1. Delete all players in the club subcollection
+    await deleteCollection(
+      adminDb.collection(`clubs/${clubId}/players`)
+    );
+
+    // 2. For each team, delete associated squads then the team itself
+    const teamsSnap = await adminDb.collection(`clubs/${clubId}/teams`).get();
+    for (const teamDoc of teamsSnap.docs) {
+      const squadsSnap = await adminDb
+        .collection("squads")
+        .where("teamId", "==", teamDoc.id)
+        .get();
+      if (!squadsSnap.empty) {
+        const batch = getAdminDb().batch();
+        squadsSnap.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+      }
+      await teamDoc.ref.delete();
+    }
+
+    // 3. Delete the club document itself
     await adminDb.collection("clubs").doc(clubId).delete();
+
     return NextResponse.json({ success: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to delete club";
